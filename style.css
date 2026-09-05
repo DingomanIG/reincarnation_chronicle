@@ -1,21 +1,28 @@
 :root{
-    --ink:#f1ede2;
-    --void:#201c1c;
-    --void2:#2b2626;
-    --gold:#e2100a;
-    --gold-dim:#f65622;
-    --line:#4a4040;
-    --red:#f65622;
-    --marker:#f2c94c;
+    /* 양뎅잉크 테마: 바랜 종이 + 목판 잉크 */
+    --ink:#211c15;
+    --ink-soft:#5e5340;
+    --void:#e8dcc2;
+    --void2:#ddcfa9;
+    --paper-3:#d3c295;
+    --gold:#7a2418;
+    --gold-dim:#9c5a3c;
+    --line:#a3906a;
+    --red:#7a2418;
+    --marker:#211c15;
   }
   *{box-sizing:border-box;}
   body{
     margin:0;
     min-height:100vh;
-    background:
-      radial-gradient(ellipse at 50% -10%, #2f2626 0%, var(--void) 55%);
+    background-color:var(--void);
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(0,0,0,0.03) 0, transparent 45%),
+      radial-gradient(circle at 85% 75%, rgba(0,0,0,0.04) 0, transparent 50%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.015) 0px, transparent 1px, transparent 2px),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.012) 0px, transparent 1px, transparent 3px);
     color:var(--ink);
-    font-family:'Inter','Noto Sans KR',sans-serif;
+    font-family:'Noto Serif KR',Georgia,serif;
     display:flex;
     justify-content:center;
     padding:32px 16px 64px;
@@ -31,12 +38,12 @@
     margin:0 0 4px;
     color:var(--ink);
     letter-spacing:0.04em;
-    font-family:'Anton','Noto Sans KR',sans-serif;
+    font-family:'Rye','Noto Serif KR',serif;
   }
   .sub{
     text-align:center;
     font-size:13px;
-    color:#a8908a;
+    color:var(--ink-soft);
     margin-bottom:28px;
     font-style:italic;
   }
@@ -51,7 +58,7 @@
     content:"";
     position:absolute;
     inset:6px;
-    border:1px solid rgba(201,162,75,0.15);
+    border:1px solid rgba(122,36,24,0.15);
     pointer-events:none;
   }
   /* 화면(스텝) 전환 시 새 내용이 위에서 아래로 슬라이드 다운되며 나타남 */
@@ -70,7 +77,7 @@
     color:var(--ink);
     margin:0 0 18px;
     text-align:center;
-    font-family:'Anton','Noto Sans KR',sans-serif;
+    font-family:'Rye','Noto Serif KR',serif;
     font-weight:400;
   }
   .choice-grid{
@@ -90,7 +97,7 @@
   }
   .choice:hover, .choice:focus-visible{
     border-color:var(--gold);
-    background:rgba(201,162,75,0.06);
+    background:rgba(122,36,24,0.06);
     outline:none;
   }
   .choice .name{
@@ -98,13 +105,13 @@
     font-size:16px;
     color:var(--gold);
     margin-bottom:2px;
-    font-family:'Anton','Noto Sans KR',sans-serif;
+    font-family:'Rye','Noto Serif KR',serif;
     font-weight:400;
   }
   .choice .desc{
     display:block;
     font-size:12.5px;
-    color:#b09892;
+    color:var(--ink-soft);
   }
   .progress{
     display:flex;
@@ -128,20 +135,20 @@
     display:flex;align-items:center;justify-content:center;
     font-size:26px;
     color:var(--gold);
-    background:radial-gradient(circle at 35% 30%, #3a201d, #1c0f0e);
+    background:radial-gradient(circle at 35% 30%, #ece0c4, var(--paper-3));
   }
   .race-name{
     text-align:center;
     font-size:22px;
     color:var(--ink);
     margin:0 0 2px;
-    font-family:'Anton','Noto Sans KR',sans-serif;
+    font-family:'Rye','Noto Serif KR',serif;
     font-weight:400;
   }
   .race-tag{
     text-align:center;
     font-size:12px;
-    color:#a8908a;
+    color:var(--ink-soft);
     margin-bottom:20px;
     letter-spacing:0.08em;
   }
@@ -175,7 +182,7 @@
     padding:14px 16px;
     margin-bottom:20px;
     border:1px solid var(--gold-dim);
-    background:rgba(201,162,75,0.06);
+    background:rgba(122,36,24,0.06);
     font-size:13px;
     color:var(--ink);
   }
@@ -183,7 +190,7 @@
     color:var(--gold);
     font-size:20px;
     font-weight:400;
-    font-family:'Anton','Noto Sans KR',sans-serif;
+    font-family:'Rye','Noto Serif KR',serif;
   }
   .life-lines li .yr{
     color:var(--gold-dim);
@@ -194,7 +201,7 @@
   }
   .life-lines li:last-child{
     border-bottom:none;
-    color:#e0b8ac;
+    color:var(--gold);
   }
   .life-lines li:last-child .yr{
     color:var(--red);
@@ -204,10 +211,10 @@
     grid-template-columns:repeat(3,1fr);
     gap:8px;
     font-size:12px;
-    color:#a8908a;
+    color:var(--ink-soft);
     margin-bottom:20px;
     padding:10px;
-    background:rgba(255,255,255,0.02);
+    background:rgba(0,0,0,0.03);
     border:1px solid var(--line);
   }
   .stat-row span{
@@ -243,13 +250,13 @@
     cursor:pointer;
     transition:all 0.15s ease;
   }
-  .btn:hover{background:rgba(201,162,75,0.08);border-color:var(--gold);}
-  .btn.ghost{border-color:var(--line);color:#b09892;}
-  .btn.ghost:hover{border-color:#555;color:var(--ink);}
+  .btn:hover{background:rgba(122,36,24,0.08);border-color:var(--gold);}
+  .btn.ghost{border-color:var(--line);color:var(--ink-soft);}
+  .btn.ghost:hover{border-color:var(--ink-soft);color:var(--ink);}
   footer{
     text-align:center;
     font-size:11px;
-    color:#5a4340;
+    color:var(--ink-soft);
     margin-top:22px;
     letter-spacing:0.05em;
   }
@@ -262,7 +269,7 @@
     padding:3px 10px;
     border:1px solid var(--gold-dim);
     color:var(--gold);
-    background:rgba(201,162,75,0.08);
+    background:rgba(122,36,24,0.08);
     margin:0 auto 14px;
   }
   .grade-badge-wrap{ text-align:center; margin-top:-8px; }
@@ -297,21 +304,21 @@
     content:"";
     position:absolute;
     inset:5px;
-    border:1px solid rgba(201,162,75,0.12);
+    border:1px solid rgba(122,36,24,0.12);
     pointer-events:none;
   }
   .panel-title{
     font-size:14px;
     color:var(--ink);
     margin:0 0 14px;
-    font-family:'Anton','Noto Sans KR',sans-serif;
+    font-family:'Rye','Noto Serif KR',serif;
     font-weight:400;
     letter-spacing:0.03em;
     text-align:center;
   }
   .panel-caption{
     font-size:11px;
-    color:#7a5f5a;
+    color:var(--ink-soft);
     text-align:center;
     margin:12px 0 0;
     line-height:1.5;
@@ -320,7 +327,7 @@
   .loading-text{
     text-align:center;
     font-size:12.5px;
-    color:#a8908a;
+    color:var(--ink-soft);
     padding:20px 4px;
     line-height:1.6;
   }
@@ -341,7 +348,7 @@
     right:0;
     transform:translateY(-50%);
     font-size:10px;
-    color:#7a5f5a;
+    color:var(--ink-soft);
     white-space:nowrap;
   }
   .timeline-track{
@@ -360,10 +367,10 @@
   .timeline-marker{
     position:absolute;
     left:0;right:0;
-    background:rgba(242,201,76,0.35);
+    background:rgba(33,28,21,0.18);
     border-top:2px solid var(--marker);
     border-bottom:2px solid var(--marker);
-    box-shadow:0 0 10px rgba(242,201,76,0.6);
+    box-shadow:0 0 8px rgba(33,28,21,0.45);
     pointer-events:none;
   }
 
@@ -375,26 +382,26 @@
     padding:12px 14px;
     margin-bottom:16px;
     border:1px solid var(--gold-dim);
-    background:rgba(201,162,75,0.06);
+    background:rgba(122,36,24,0.06);
   }
-  .stat-block-label{ font-size:12.5px; color:#b09892; }
+  .stat-block-label{ font-size:12.5px; color:var(--ink-soft); }
   .stat-block-value{
     font-size:20px;
     color:var(--gold);
     font-weight:400;
-    font-family:'Anton','Noto Sans KR',sans-serif;
+    font-family:'Rye','Noto Serif KR',serif;
   }
   .stat-block-value small{
     font-size:11px;
-    color:#a8908a;
+    color:var(--ink-soft);
     margin-left:3px;
-    font-family:'Inter','Noto Sans KR',sans-serif;
+    font-family:'Noto Serif KR',Georgia,serif;
   }
   .dist-group{ margin-bottom:16px; }
   .dist-group:last-of-type{ margin-bottom:16px; }
   .dist-title{
     font-size:11.5px;
-    color:#a8908a;
+    color:var(--ink-soft);
     margin:0 0 8px;
     letter-spacing:0.03em;
   }
@@ -403,7 +410,7 @@
     align-items:center;
     gap:8px;
     font-size:11.5px;
-    color:#b09892;
+    color:var(--ink-soft);
     margin-bottom:6px;
   }
   .dist-label{
@@ -416,7 +423,7 @@
   .dist-bar{
     flex:1;
     height:8px;
-    background:rgba(255,255,255,0.04);
+    background:rgba(0,0,0,0.05);
     border:1px solid var(--line);
     overflow:hidden;
   }
@@ -424,12 +431,12 @@
     height:100%;
     background:var(--gold-dim);
   }
-  .dist-fill.race{ background:#8a6a63; }
+  .dist-fill.race{ background:#6b5842; }
   .dist-pct{
     width:44px;
     text-align:right;
     flex-shrink:0;
-    color:#a8908a;
+    color:var(--ink-soft);
   }
   .my-rank{
     text-align:center;
@@ -437,6 +444,6 @@
     color:var(--ink);
     padding:14px;
     border:1px solid var(--gold-dim);
-    background:rgba(201,162,75,0.08);
+    background:rgba(122,36,24,0.08);
   }
   .my-rank b{ color:var(--gold); }

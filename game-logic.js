@@ -440,7 +440,7 @@ function rollRace(){
 function screenStats(){
   state.stats = rollStats();
   setCardHTML(progressDots(1,4) + `
-    <p class="step-title">${state.race.icon} <b style="color:var(--gold)">${state.name}</b><br><span style="font-size:13px;color:#b09892">${state.gender} · ${state.race.name}(으)로 태어났다</span></p>
+    <p class="step-title">${state.race.icon} <b style="color:var(--gold)">${state.name}</b><br><span style="font-size:13px;color:var(--ink-soft)">${state.gender} · ${state.race.name}(으)로 태어났다</span></p>
     ${renderStatRow(state.stats)}
     <div class="choice-grid">
       <button class="choice" onclick="screenQuestion(0)">
@@ -567,7 +567,7 @@ function screenResult(){
     <p class="race-name">${state.name}</p>
     <div class="grade-badge-wrap"><span class="grade-badge">${grade}</span></div>
     <p class="race-tag">${state.gender} · ${state.race.name} · ${state.origin}</p>
-    <p style="text-align:center;font-size:11px;color:#7a5f5a;margin:-14px 0 20px;font-style:italic;">${state.race.tag}</p>
+    <p style="text-align:center;font-size:11px;color:var(--ink-soft);margin:-14px 0 20px;font-style:italic;">${state.race.tag}</p>
     ${renderStatRow(state.stats)}
     <ul class="life-lines">
       ${lines.map((l,idx)=>`<li><span class="yr">${birthYear + ages[idx]}년<br>(${ages[idx]}세)</span><span>${l.text}</span><span class="pt">+${l.point}</span></li>`).join('')}
@@ -664,7 +664,7 @@ function renderTimelinePanel(all, record){
 
   const bucketsHtml = counts.map(c=>{
     const alpha = (0.06 + (c / maxCount) * 0.55).toFixed(3);
-    return `<div class="bucket" style="background:rgba(226,16,10,${alpha})" title="${c}명 생존"></div>`;
+    return `<div class="bucket" style="background:rgba(122,36,24,${alpha})" title="${c}명 생존"></div>`;
   }).join('');
 
   const myTopPct = (Math.max(0, Math.min(TIMELINE_MAX_YEAR, record.birth_year)) / TIMELINE_MAX_YEAR) * 100;
