@@ -122,7 +122,7 @@
   .race-name{
     text-align:center;
     font-size:22px;
-    color:var(--gold);
+    color:var(--ink);
     margin:0 0 2px;
     font-family:'Anton','Noto Sans KR',sans-serif;
     font-weight:400;
@@ -291,7 +291,7 @@
   }
   .panel-title{
     font-size:14px;
-    color:var(--gold);
+    color:var(--ink);
     margin:0 0 14px;
     font-family:'Anton','Noto Sans KR',sans-serif;
     font-weight:400;
@@ -396,7 +396,7 @@
     margin-bottom:6px;
   }
   .dist-label{
-    width:52px;
+    width:58px;
     flex-shrink:0;
     overflow:hidden;
     text-overflow:ellipsis;

@@ -720,10 +720,7 @@ function renderStatsPanel(all, record){
     raceCounts[key] = (raceCounts[key] || 0) + 1;
   });
   const raceSorted = Object.entries(raceCounts).sort((a,b)=>b[1]-a[1]);
-  const TOP_RACE_N = 5;
-  const topRaces = raceSorted.slice(0, TOP_RACE_N);
-  const restCount = raceSorted.slice(TOP_RACE_N).reduce((s,[,c])=>s+c, 0);
-  let raceRows = topRaces.map(([name,c])=>{
+  const raceRows = raceSorted.map(([name,c])=>{
     const pct = c / safeTotal * 100;
     return `
       <div class="dist-row">
@@ -733,16 +730,6 @@ function renderStatsPanel(all, record){
       </div>
     `;
   }).join('');
-  if(restCount > 0){
-    const pct = restCount / safeTotal * 100;
-    raceRows += `
-      <div class="dist-row">
-        <span class="dist-label">기타</span>
-        <div class="dist-bar"><div class="dist-fill race" style="width:${pct}%"></div></div>
-        <span class="dist-pct">${pct.toFixed(1)}%</span>
-      </div>
-    `;
-  }
 
   // 등급별 누적 비율로 내 등급의 상위 % 계산 (전설이 가장 희귀 -> 상위)
   const myRank = GRADE_ORDER.indexOf(record.grade);
