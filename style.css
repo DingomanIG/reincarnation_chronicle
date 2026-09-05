@@ -6,6 +6,7 @@
     --gold-dim:#f65622;
     --line:#4a4040;
     --red:#f65622;
+    --marker:#f2c94c;
   }
   *{box-sizing:border-box;}
   body{
@@ -355,10 +356,10 @@
   .timeline-marker{
     position:absolute;
     left:0;right:0;
-    background:rgba(226,16,10,0.35);
-    border-top:2px solid var(--gold);
-    border-bottom:2px solid var(--gold);
-    box-shadow:0 0 10px rgba(226,16,10,0.55);
+    background:rgba(242,201,76,0.35);
+    border-top:2px solid var(--marker);
+    border-bottom:2px solid var(--marker);
+    box-shadow:0 0 10px rgba(242,201,76,0.6);
     pointer-events:none;
   }
 
