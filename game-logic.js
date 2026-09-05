@@ -250,6 +250,9 @@ function raceGrade(race){
 // 등급별로 이번 생에서 뽑을 업적카드 장수
 const GRADE_CARD_COUNTS = { "일반":1, "레어":2, "고급":3, "전설":4 };
 
+// 등급별 종족뱃지(portrait-slot) 테두리 색 (흔한 RPG 희귀도 배색: 회색<파랑<보라<금색)
+const GRADE_BORDER_COLORS = { "일반":"#9c9c9c", "레어":"#2f7dd6", "고급":"#8a4fc9", "전설":"#d4a017" };
+
 // ACHIEVEMENT_CARDS(achievement-cards.js, 노션 동기화 결과)에서 count장을 중복 없이 랜덤으로 뽑는다
 function rollAchievementCards(count){
   const pool = [...ACHIEVEMENT_CARDS];
@@ -413,6 +416,22 @@ function statTag(statName, value){
   if(value <= 15) return tiers[3];
   return tiers[4];
 }
+// 종족 이미지 로딩이 (네트워크 순단 등으로) 실패하면 한 번 재시도하고,
+// 그래도 실패하면 예전 유니코드 아이콘으로 자연스럽게 대체한다.
+function handlePortraitImgError(img){
+  if(!img.dataset.retried){
+    img.dataset.retried = "1";
+    setTimeout(()=>{
+      img.src = img.getAttribute("src").split("?")[0] + "?retry=" + Date.now();
+    }, 400);
+    return;
+  }
+  const span = document.createElement("span");
+  span.className = "portrait-fallback-icon";
+  span.textContent = img.dataset.fallbackIcon || "";
+  img.replaceWith(span);
+}
+
 function renderStatRow(stats){
   return `
     <div class="stat-row">
@@ -676,8 +695,8 @@ function screenResult(){
   state.questionQueue = null;
 
   setCardHTML(progressDots(3,4) + `
-    <div class="portrait-slot" style="background:${state.race.themeColor}">
-      <img src="assets/races/${state.race.key}.png" alt="${state.race.name}" class="portrait-img">
+    <div class="portrait-slot" style="background:${state.race.themeColor};border-color:${GRADE_BORDER_COLORS[grade] || 'var(--gold-dim)'}">
+      <img src="assets/races/${state.race.key}.png" alt="${state.race.name}" class="portrait-img" data-fallback-icon="${state.race.icon}" onerror="handlePortraitImgError(this)">
     </div>
     <p class="race-name">${state.name}</p>
     <div class="grade-badge-wrap"><span class="grade-badge">${grade}</span></div>

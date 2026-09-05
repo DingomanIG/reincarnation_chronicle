@@ -25,6 +25,7 @@
     font-family:'Noto Serif KR',Georgia,serif;
     display:flex;
     justify-content:center;
+    align-items:center;
     padding:32px 16px 64px;
   }
   .stage{
@@ -128,9 +129,9 @@
 
   /* Result */
   .portrait-slot{
-    width:64px;height:64px;
+    width:128px;height:128px;
     margin:0 auto 16px;
-    border:1px solid var(--gold-dim);
+    border:6px solid var(--gold-dim);
     border-radius:50%;
     display:flex;align-items:center;justify-content:center;
     font-size:26px;
@@ -146,11 +147,17 @@
     /* 흰색 실루엣 아이콘이라 살짝 그림자를 줘 종족색 배경 위에서 또렷하게 보이게 함 */
     filter:drop-shadow(0 0 2px rgba(0,0,0,0.35));
   }
+  /* 종족 이미지가 끝내 로딩 실패했을 때의 대체 아이콘 */
+  .portrait-fallback-icon{
+    font-size:52px;
+    color:#fff;
+    text-shadow:0 0 3px rgba(0,0,0,0.4);
+  }
   .race-name{
     text-align:center;
-    font-size:22px;
+    font-size:44px;
     color:var(--ink);
-    margin:0 0 2px;
+    margin:0 0 10px;
     font-family:'Rye','Noto Serif KR',serif;
     font-weight:400;
   }
@@ -282,7 +289,7 @@
     background:rgba(122,36,24,0.08);
     margin:0 auto 14px;
   }
-  .grade-badge-wrap{ text-align:center; margin-top:-8px; }
+  .grade-badge-wrap{ text-align:center; margin-top:0; margin-bottom:10px; }
 
   /* ---- 결과 화면 레이아웃 (카드 + 세계관 통계) ---- */
   .stage{ transition: max-width 0.2s ease; }
