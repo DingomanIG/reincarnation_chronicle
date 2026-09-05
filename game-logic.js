@@ -714,11 +714,18 @@ function renderStatsPanel(all, record){
     `;
   }).join('');
 
+  // 아직 한 번도 나오지 않은 종족도 0%로 함께 보여준다
   const raceCounts = {};
+  RACES.forEach(r=>{ raceCounts[r.name] = 0; });
+  let unknownRaceCount = 0;
   all.forEach(r=>{
-    const key = r.race || "알 수 없음";
-    raceCounts[key] = (raceCounts[key] || 0) + 1;
+    if(r.race && raceCounts[r.race] !== undefined){
+      raceCounts[r.race]++;
+    } else {
+      unknownRaceCount++;
+    }
   });
+  if(unknownRaceCount > 0) raceCounts["알 수 없음"] = unknownRaceCount;
   const raceSorted = Object.entries(raceCounts).sort((a,b)=>b[1]-a[1]);
   const raceRows = raceSorted.map(([name,c])=>{
     const pct = c / safeTotal * 100;
