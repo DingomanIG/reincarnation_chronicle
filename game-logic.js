@@ -14,12 +14,27 @@ const NAME_POOL = {
   arachne:{ first:["실키","베놈","아라크","미스트웹","자매실","그림자실"], last:[] },
   halfelf:{ first:["아리엔","테오","실라스","엘로윈","다미안","리아나"], last:["두빛","경계인","섞인달","반그림자"] }
 };
+const NO_SURNAME_RACES = ["orc","goblin","ratkin","halfdemon","kobold","arachne"];
 function genName(raceKey){
   const p = NAME_POOL[raceKey];
-  if(["orc","goblin","ratkin","halfdemon","kobold","arachne"].includes(raceKey)){
+  if(NO_SURNAME_RACES.includes(raceKey)){
     return rand(p.first); // 성씨 없이 이름만
   }
   return `${rand(p.first)} ${rand(p.last)}`;
+}
+// 자식 이름: 이름은 새로 굴리되, 성(surname)은 부모 것을 그대로 물려받는다 (성씨 있는 종족만 해당)
+function genChildName(raceKey, inheritedSurname){
+  const p = NAME_POOL[raceKey];
+  if(NO_SURNAME_RACES.includes(raceKey)){
+    return rand(p.first);
+  }
+  const last = inheritedSurname || rand(p.last);
+  return `${rand(p.first)} ${last}`;
+}
+// 이름 문자열에서 성(surname)만 뽑아낸다 ("이름 성" 형식, 성씨 없는 종족이면 null)
+function extractSurname(fullName){
+  const parts = fullName.trim().split(/\s+/);
+  return parts.length > 1 ? parts[1] : null;
 }
 
 // 참고: 각 종족의 middleCount 필드는 업적카드 시스템 도입 이후 더 이상 쓰이지 않는다.
@@ -465,7 +480,7 @@ function continueAsChild(){
   if(!pending) return;
   state.race = pending.race;
   state.grade = raceGrade(pending.race);
-  state.name = genName(pending.race.key);
+  state.name = genChildName(pending.race.key, pending.surname);
   state.gender = rand(GENDERS);
   state.origin = pending.origin;
   state.traits = [];
@@ -648,7 +663,8 @@ function screenResult(){
       race: state.race,
       origin: state.origin,
       birthYear: birthYear + ages[2],
-      parentId: null
+      parentId: null,
+      surname: extractSurname(state.name)
     };
   } else {
     state.pendingChild = null;
