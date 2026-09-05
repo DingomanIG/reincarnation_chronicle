@@ -22,6 +22,9 @@ function genName(raceKey){
   return `${rand(p.first)} ${rand(p.last)}`;
 }
 
+// 참고: 각 종족의 middleCount 필드는 업적카드 시스템 도입 이후 더 이상 쓰이지 않는다.
+// (생애 중간 사건 개수는 이제 종족이 아니라 등급별 업적카드 장수로 결정됨 -> GRADE_CARD_COUNTS)
+// 추후 다른 용도로 재사용할 수 있어 필드 자체는 삭제하지 않고 남겨둔다.
 const RACES = [
   {
     key:"human", name:"인간", tag:"짧고 뜨겁게 타오르는 자들",
@@ -229,6 +232,20 @@ function raceGrade(race){
   return "일반";
 }
 
+// 등급별로 이번 생에서 뽑을 업적카드 장수
+const GRADE_CARD_COUNTS = { "일반":1, "레어":2, "고급":3, "전설":4 };
+
+// ACHIEVEMENT_CARDS(achievement-cards.js, 노션 동기화 결과)에서 count장을 중복 없이 랜덤으로 뽑는다
+function rollAchievementCards(count){
+  const pool = [...ACHIEVEMENT_CARDS];
+  const drawn = [];
+  for(let i=0; i<count && pool.length>0; i++){
+    const idx = Math.floor(Math.random()*pool.length);
+    drawn.push(pool.splice(idx,1)[0]);
+  }
+  return drawn;
+}
+
 function pickWeightedRace(){
   const total = RACES.reduce((s,r)=>s+r.weight,0);
   let roll = Math.random()*total;
@@ -316,7 +333,7 @@ async function fetchWorldRecords(){
 }
 
 /* ---------- 상태 ---------- */
-let state = { race:null, stats:null, traits:[], name:null, gender:null };
+let state = { race:null, grade:null, stats:null, traits:[], name:null, gender:null };
 
 const card = document.getElementById('card');
 const foot = document.getElementById('foot');
@@ -412,6 +429,7 @@ function screenRace(){
 }
 function rollRace(){
   state.race = pickWeightedRace();
+  state.grade = raceGrade(state.race);
   state.name = genName(state.race.key);
   state.gender = rand(GENDERS);
   state.origin = rand(state.race.origins);
@@ -496,52 +514,25 @@ function genChildrenLine(race, selfName){
   return `${spouse}${j} 혼인해 슬하에 자식 ${n}명을 두었다.`;
 }
 
+// 생애 구조: 출생(0pt) -> 직업(0pt) -> 자녀/혼인줄(0pt) -> 업적카드 N장(등급별 장수) -> 사망(0pt)
+// (기존 race.lines / traits / RANDOM_EVENTS 조합은 업적카드 시스템으로 대체되었다.
+//  traits 자체는 성향 질문 화면 유지를 위해 계속 수집하지만, 생애 텍스트 생성에는 더 이상 쓰이지 않는다.)
 function generateLifeLines(){
-  const raceLines = [...state.race.lines];
-  const traitLines = state.traits.map(t=>t.line);
-
-  const birthLine = `${rand(state.race.birthPlaces)}에서, ${rand(state.race.birthParents)} 태어났다.`;
+  const birthLine = { text: `${rand(state.race.birthPlaces)}에서, ${rand(state.race.birthParents)} 태어났다.`, point: 0 };
   const job = rand(state.race.jobs);
-  const jobLine = `${job}${hasBatchim(job) ? "으로" : "로"} 살아가기 시작했다.`;
-  const deathLine = `${rand(state.race.deaths)} 죽음을 맞았다.`;
+  const jobLine = { text: `${job}${hasBatchim(job) ? "으로" : "로"} 살아가기 시작했다.`, point: 0 };
+  const childrenLine = { text: genChildrenLine(state.race, state.name), point: 0 };
+  const deathLine = { text: `${rand(state.race.deaths)} 죽음을 맞았다.`, point: 0 };
 
-  // 중간 사건: 종족 수명에 따라 개수가 다름 (단명종 적게 / 장생종 많게)
-  // 20% 종족 고유 / 30% 성향 / 50% 완전 랜덤
-  const eventSlots = Math.max(0, state.race.middleCount - 1); // 자녀 줄 하나는 별도로 확보
-  const middle = [];
-  for(let n=0;n<eventSlots;n++){
-    const r = Math.random();
-    let picked;
-    if(r < 0.20 && raceLines.length){
-      picked = raceLines.shift();
-    } else if(r < 0.50 && traitLines.length){
-      const idx = Math.floor(Math.random()*traitLines.length);
-      picked = traitLines.splice(idx,1)[0];
-    } else {
-      picked = rand(RANDOM_EVENTS);
-    }
-    if(!picked) picked = raceLines.shift() || rand(RANDOM_EVENTS);
-    middle.push(picked);
-  }
+  const cardCount = GRADE_CARD_COUNTS[state.grade] || 1;
+  const cardLines = rollAchievementCards(cardCount).map(c=>({ text: c.text, point: c.point }));
 
-  // 자녀 줄은 한 줄로 몰아서, 중간 사건들 사이 랜덤 위치에 삽입
-  const childrenLine = genChildrenLine(state.race, state.name);
-  const insertAt = Math.floor(Math.random()*(middle.length+1));
-  middle.splice(insertAt, 0, childrenLine);
-
-  return [birthLine, jobLine, ...middle, deathLine];
+  return [birthLine, jobLine, childrenLine, ...cardLines, deathLine];
 }
 
-function generateLifePoints(count){
-  // [출생, 직업, 중간..., 사망] 구조에 맞춰 줄마다 기여 포인트를 부여
-  const pts = [5]; // 출생
-  pts.push(6 + Math.floor(Math.random()*5)); // 직업 시작: 6~10
-  const middleCount = count - 3;
-  for(let i=0;i<middleCount;i++){
-    pts.push(6 + Math.floor(Math.random()*10)); // 중간 사건: 6~15
-  }
-  pts.push(12 + Math.floor(Math.random()*14)); // 사망: 12~25
-  return pts;
+// 이제 각 줄(lines)이 이미 point를 담고 있으므로, 그대로 추출만 한다.
+function generateLifePoints(lines){
+  return lines.map(l=>l.point);
 }
 function generateAges(count, race){
   // 종족 평균수명(lifespan)에 비례해 생애 전체 나이를 배분한다
@@ -563,13 +554,13 @@ function generateAges(count, race){
 }
 
 function screenResult(){
-  const lines = generateLifeLines();
+  const lines = generateLifeLines(); // [{text, point}, ...]
   const ages = generateAges(lines.length, state.race);
-  const points = generateLifePoints(lines.length);
+  const points = generateLifePoints(lines);
   const totalPoints = points.reduce((a,b)=>a+b,0);
   const birthYear = 100 + Math.floor(Math.random()*900);
   const deathYear = birthYear + ages[ages.length-1];
-  const grade = raceGrade(state.race);
+  const grade = state.grade;
 
   setCardHTML(progressDots(3,4) + `
     <div class="portrait-slot">${state.race.icon}</div>
@@ -579,10 +570,10 @@ function screenResult(){
     <p style="text-align:center;font-size:11px;color:#7a5f5a;margin:-14px 0 20px;font-style:italic;">${state.race.tag}</p>
     ${renderStatRow(state.stats)}
     <ul class="life-lines">
-      ${lines.map((l,idx)=>`<li><span class="yr">${birthYear + ages[idx]}년<br>(${ages[idx]}세)</span><span>${l}</span><span class="pt">+${points[idx]}</span></li>`).join('')}
+      ${lines.map((l,idx)=>`<li><span class="yr">${birthYear + ages[idx]}년<br>(${ages[idx]}세)</span><span>${l.text}</span><span class="pt">+${l.point}</span></li>`).join('')}
     </ul>
     <div class="total-points">
-      <span>이번 생의 기여 포인트</span>
+      <span>이번 생의 업적 포인트</span>
       <b>+${totalPoints}</b>
     </div>
     <div class="actions">
@@ -590,7 +581,7 @@ function screenResult(){
       <button class="btn ghost" onclick="screenStart()">처음으로</button>
     </div>
   `);
-  foot.textContent = "기여 포인트는 누적되면 로어포인트로 전환됩니다 (프로토타입: 미저장)";
+  foot.textContent = "업적 포인트는 누적되면 로어포인트로 전환됩니다 (프로토타입: 미저장)";
 
   const record = {
     name: state.name,

@@ -1,0 +1,25 @@
+{
+  "name": "reincarnation_chronicle",
+  "version": "1.0.0",
+  "main": "game-logic.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "sync:achievements": "node scripts/sync-achievements.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DingomanIG/reincarnation_chronicle.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DingomanIG/reincarnation_chronicle/issues"
+  },
+  "homepage": "https://github.com/DingomanIG/reincarnation_chronicle#readme",
+  "description": "",
+  "devDependencies": {
+    "@notionhq/client": "^5.26.0",
+    "dotenv": "^17.4.2"
+  }
+}
