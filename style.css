@@ -448,3 +448,44 @@
     background:rgba(122,36,24,0.08);
   }
   .my-rank b{ color:var(--gold); }
+
+  /* ---- 가족도 ---- */
+  .family-tree{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .family-node{
+    border:1px solid var(--line);
+    background:rgba(0,0,0,0.03);
+    padding:10px 12px;
+  }
+  .family-node-me{
+    border-color:var(--gold-dim);
+    background:rgba(122,36,24,0.08);
+  }
+  .family-node-name{
+    font-size:14px;
+    color:var(--ink);
+    font-family:'Rye','Noto Serif KR',serif;
+  }
+  .family-me-tag{
+    font-size:10.5px;
+    color:var(--gold);
+    border:1px solid var(--gold-dim);
+    padding:1px 6px;
+    margin-left:4px;
+    font-family:'Noto Serif KR',Georgia,serif;
+  }
+  .family-node-meta{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:3px;
+  }
+  .family-connector{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13px;
+    line-height:1;
+    padding:2px 0;
+  }

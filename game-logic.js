@@ -300,11 +300,33 @@ try{
   console.error("[archive] Supabase 클라이언트 초기화 실패", e);
 }
 
-// 새로 태어난 캐릭터를 아카이브 테이블에 저장
+// 새로 태어난 캐릭터를 아카이브 테이블에 저장하고, 생성된 행의 id를 돌려준다
+// (다음 세대를 이어갈 때 그 id를 parent_id로 물려주기 위함)
 async function archiveCharacter(record){
   if(!supabaseClient) throw new Error("Supabase 클라이언트를 사용할 수 없습니다.");
-  const { error } = await supabaseClient.from("characters").insert(record);
+  const { data, error } = await supabaseClient.from("characters").insert(record).select("id").single();
   if(error) throw error;
+  return data ? data.id : null;
+}
+
+// 가족도용: parent_id를 타고 올라가며 조상 체인을 가져온다 (가장 오래된 조상이 배열 맨 앞)
+async function fetchAncestorChain(parentId){
+  if(!supabaseClient || !parentId) return [];
+  const chain = [];
+  let currentId = parentId;
+  let guard = 0;
+  while(currentId && guard < 20){ // 혹시 모를 순환 참조 방지용 안전장치
+    guard++;
+    const { data, error } = await supabaseClient
+      .from("characters")
+      .select("id, name, race, grade, birth_year, death_year, parent_id")
+      .eq("id", currentId)
+      .maybeSingle();
+    if(error || !data) break;
+    chain.push(data);
+    currentId = data.parent_id;
+  }
+  return chain.reverse();
 }
 
 // 세계관 통계용: 전체 캐릭터의 등급/종족/생애 구간만 조회
@@ -321,9 +343,10 @@ async function fetchWorldRecords(){
 let state = {
   race:null, grade:null, stats:null, traits:[], name:null, gender:null,
   // 자식으로 이어가기 기능용 상태
-  pendingChild:null,        // 이번 생 결과에서 넘겨줄 자식 정보 { race, origin, birthYear }
+  pendingChild:null,        // 이번 생 결과에서 넘겨줄 자식 정보 { race, origin, birthYear, parentId }
   inheritedBirthYear:null,  // 자식으로 이어갈 때 물려받는 출생년도
   isChildContinuation:false, // 지금 진행 중인 생이 "자식으로 이어가기"로 시작됐는지
+  parentId:null,            // 지금 이 생 자신의 부모 캐릭터 행 id (가족도/DB parent_id용, 없으면 1세대)
   // 신-질문 시스템용 상태
   drawnCards:null,         // 이번 생에 뽑힌 업적카드들 [{category,point,text}, ...] (screenResult에서 소비)
   questionQueue:null       // drawnCards의 카테고리 순서대로 물어볼 질문들 [{q,opts}, ...]
@@ -425,6 +448,7 @@ function rollRace(){
   // 완전히 새로운 환생이므로, 혹시 남아있을 자식 이어가기 상태는 초기화한다
   state.inheritedBirthYear = null;
   state.isChildContinuation = false;
+  state.parentId = null; // 새 가문의 1세대 (조상 없음)
   state.race = pickWeightedRace();
   state.grade = raceGrade(state.race);
   state.name = genName(state.race.key);
@@ -447,6 +471,7 @@ function continueAsChild(){
   state.traits = [];
   state.inheritedBirthYear = pending.birthYear;
   state.isChildContinuation = true;
+  state.parentId = pending.parentId || null;
   state.pendingChild = null;
   screenStats();
 }
@@ -611,13 +636,19 @@ function screenResult(){
   const deathYear = birthYear + ages[ages.length-1];
   const grade = state.grade;
 
+  // 이 생 자신의 부모 id (가계도 DB 저장용). 자식에게 물려줄 parentId는
+  // 이 생이 실제로 저장된 뒤에야 알 수 있으므로 일단 null로 만들어두고,
+  // archiveAndLoadWorldStats()에서 insert 성공 시 채워 넣는다.
+  const myParentId = state.parentId;
+
   // 자녀 줄은 항상 인덱스 2 -> ages[2]가 "자식을 본 나이". 이 생의 출생년도 기준으로
   // 다음 세대(자식)의 출생년도를 계산해 이어가기 버튼에 실어 보낸다.
   if(hasChildren){
     state.pendingChild = {
       race: state.race,
       origin: state.origin,
-      birthYear: birthYear + ages[2]
+      birthYear: birthYear + ages[2],
+      parentId: null
     };
   } else {
     state.pendingChild = null;
@@ -660,7 +691,8 @@ function screenResult(){
     life_lines: lines,
     contribution_points: totalPoints,
     birth_year: birthYear,
-    death_year: deathYear
+    death_year: deathYear,
+    parent_id: myParentId
   };
 
   renderSidePanelsLoading();
@@ -692,13 +724,18 @@ function renderSidePanelsError(){
 
 async function archiveAndLoadWorldStats(record){
   try{
-    await archiveCharacter(record);
+    const insertedId = await archiveCharacter(record);
+    // 이번 생에 자식이 있었다면, 방금 저장된 이 생의 id를 자식의 parent_id로 물려준다
+    if(state.pendingChild) state.pendingChild.parentId = insertedId;
   }catch(e){
     console.error("[archive] 캐릭터 저장 실패", e);
   }
   try{
-    const all = await fetchWorldRecords();
-    renderSidePanels(all, record);
+    const [all, ancestorChain] = await Promise.all([
+      fetchWorldRecords(),
+      fetchAncestorChain(record.parent_id)
+    ]);
+    renderSidePanels(all, record, ancestorChain);
   }catch(e){
     console.error("[archive] 세계관 통계 조회 실패", e);
     renderSidePanelsError();
@@ -830,9 +867,43 @@ function renderStatsPanel(all, record){
   `;
 }
 
-function renderSidePanels(all, record){
+// 조상 체인(ancestorChain, 가장 오래된 조상이 앞) + 이번 생(record)을 세로 가계도로 렌더링.
+// 부모가 없는(1세대) 생이면 보여줄 게 없으니 빈 문자열을 돌려준다.
+function renderFamilyPanel(ancestorChain, record){
+  if(!ancestorChain || ancestorChain.length === 0) return '';
+
+  const nodes = [...ancestorChain, {
+    name: record.name, race: record.race, grade: record.grade,
+    birth_year: record.birth_year, death_year: record.death_year
+  }];
+
+  const rows = nodes.map((n, idx)=>{
+    const isMe = idx === nodes.length - 1;
+    const node = `
+      <div class="family-node${isMe ? ' family-node-me' : ''}">
+        <div class="family-node-name">${n.name}${isMe ? ' <span class="family-me-tag">나</span>' : ''}</div>
+        <div class="family-node-meta">${n.race} · ${n.grade} · ${n.birth_year}~${n.death_year}년</div>
+      </div>
+    `;
+    const connector = idx < nodes.length - 1 ? `<div class="family-connector">↓</div>` : '';
+    return node + connector;
+  }).join('');
+
+  return `
+    <div class="side-panel family-panel">
+      <h3 class="panel-title">가족도</h3>
+      <div class="family-tree">${rows}</div>
+      <p class="panel-caption">대를 이어온 ${nodes.length}대의 혈통.</p>
+    </div>
+  `;
+}
+
+function renderSidePanels(all, record, ancestorChain){
   if(!sidePanelsEl) return;
-  sidePanelsEl.innerHTML = renderTimelinePanel(all, record) + renderStatsPanel(all, record);
+  sidePanelsEl.innerHTML =
+    renderFamilyPanel(ancestorChain, record) +
+    renderTimelinePanel(all, record) +
+    renderStatsPanel(all, record);
 }
 
 /* ---------- 초기 ---------- */
