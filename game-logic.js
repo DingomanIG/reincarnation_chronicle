@@ -258,24 +258,9 @@ function pickWeightedRace(){
 
 const GENDERS = ["남성","여성"];
 
-const PERSONALITY_Q = [
-  {
-    q:"위기의 순간, 당신은?",
-    opts:[
-      {label:"앞으로 나선다", trait:"용맹", line:"위험 앞에서 물러서지 않는 성정이 평판을 만들었다."},
-      {label:"동료를 먼저 챙긴다", trait:"의리", line:"자신보다 곁의 사람을 먼저 살피는 이로 기억되었다."},
-      {label:"조용히 계산한다", trait:"신중", line:"성급함 대신 계산이 여러 번 목숨을 구했다."}
-    ]
-  },
-  {
-    q:"가장 견디기 힘든 것은?",
-    opts:[
-      {label:"배신", trait:"강직", line:"한 번의 배신을 평생 잊지 않고 새겼다."},
-      {label:"무의미함", trait:"이상주의", line:"의미 없는 삶을 견디지 못해 늘 무언가를 좇았다."},
-      {label:"외로움", trait:"정情", line:"혼자 남는 것을 가장 두려워하며 살았다."}
-    ]
-  }
-];
+// 고정된 성향 질문 2개(PERSONALITY_Q)는 폐기되었다.
+// 이제 이번 생에 뽑힌 업적카드들의 카테고리(신)에 맞춰, personality-questions.js의
+// PERSONALITY_QUESTIONS[신]에서 질문을 하나씩 골라 묻는 방식으로 대체됨 (beginQuestions() 참고).
 
 const RANDOM_EVENTS = [
   "이름 모를 병에 걸렸으나 기적처럼 나았다.",
@@ -338,7 +323,10 @@ let state = {
   // 자식으로 이어가기 기능용 상태
   pendingChild:null,        // 이번 생 결과에서 넘겨줄 자식 정보 { race, origin, birthYear }
   inheritedBirthYear:null,  // 자식으로 이어갈 때 물려받는 출생년도
-  isChildContinuation:false // 지금 진행 중인 생이 "자식으로 이어가기"로 시작됐는지
+  isChildContinuation:false, // 지금 진행 중인 생이 "자식으로 이어가기"로 시작됐는지
+  // 신-질문 시스템용 상태
+  drawnCards:null,         // 이번 생에 뽑힌 업적카드들 [{category,point,text}, ...] (screenResult에서 소비)
+  questionQueue:null       // drawnCards의 카테고리 순서대로 물어볼 질문들 [{q,opts}, ...]
 };
 
 const card = document.getElementById('card');
@@ -467,13 +455,12 @@ function continueAsChild(){
 function screenStats(){
   resetSidePanels();
   state.stats = rollStats();
-  const nextAction = state.isChildContinuation ? "screenResult()" : "screenQuestion(0)";
   const nextDesc = state.isChildContinuation ? "성향 질문은 건너뛰고 바로 삶을 살아본다" : "이 삶의 성향을 정한다";
   setCardHTML(progressDots(1,4) + `
     <p class="step-title">${state.race.icon} <b style="color:var(--gold)">${state.name}</b><br><span style="font-size:13px;color:var(--ink-soft)">${state.gender} · ${state.race.name}(으)로 태어났다</span></p>
     ${renderStatRow(state.stats)}
     <div class="choice-grid">
-      <button class="choice" onclick="${nextAction}">
+      <button class="choice" onclick="beginQuestions()">
         <span class="name">다음 →</span>
         <span class="desc">${nextDesc}</span>
       </button>
@@ -481,25 +468,46 @@ function screenStats(){
   `);
 }
 
-/* ---------- 화면: 3 성향 질문 ---------- */
-function screenQuestion(i){
-  if(i >= PERSONALITY_Q.length){ screenResult(); return; }
-  const q = PERSONALITY_Q[i];
+// 등급이 정해졌으니(state.grade), 그 등급만큼 업적카드를 먼저 뽑고, 뽑힌 카드들의
+// 카테고리(신) 순서대로 물어볼 질문 큐를 만든다. 자식으로 이어가기 중이면 질문 없이 바로 결과로.
+function beginQuestions(){
+  const cardCount = GRADE_CARD_COUNTS[state.grade] || 1;
+  state.drawnCards = rollAchievementCards(cardCount);
+  state.traits = [];
+
+  // 카드마다 그 카테고리(신)의 질문 풀에서 하나씩 랜덤으로 고른다.
+  // 같은 신이 카드에 두 번 나오면 그 신 질문도 그대로 두 번 묻는다 (중복 방지 없음).
+  state.questionQueue = state.drawnCards.map(c=>{
+    const pool = (typeof PERSONALITY_QUESTIONS !== "undefined" && PERSONALITY_QUESTIONS[c.category]) || [];
+    return pool.length ? rand(pool) : null; // 그 신의 질문이 아직 없으면 이 카드 자리는 질문 없이 스킵
+  }).filter(q=>q);
+
+  if(state.isChildContinuation){
+    screenResult();
+  } else {
+    screenGodQuestion(0);
+  }
+}
+
+/* ---------- 화면: 3 성향 질문 (업적카드 카테고리의 신들이 순서대로 질문) ---------- */
+function screenGodQuestion(i){
+  if(!state.questionQueue || i >= state.questionQueue.length){ screenResult(); return; }
+  const q = state.questionQueue[i];
   setCardHTML(progressDots(2,4) + `
     <p class="step-title">${q.q}</p>
     <div class="choice-grid">
-      ${q.opts.map((o,idx)=>`
-        <button class="choice" onclick="answerQuestion(${i},${idx})">
-          <span class="name">${o.label}</span>
+      ${q.opts.map((label,idx)=>`
+        <button class="choice" onclick="answerGodQuestion(${i},${idx})">
+          <span class="name">${label}</span>
         </button>
       `).join('')}
     </div>
   `);
 }
-function answerQuestion(qi, oi){
-  const opt = PERSONALITY_Q[qi].opts[oi];
-  state.traits.push(opt);
-  screenQuestion(qi+1);
+function answerGodQuestion(qi, oi){
+  // 선택한 답은 지금 당장은 생애 텍스트에 반영되지 않지만(추후 확장 대비) 기록은 해둔다.
+  state.traits.push({ questionIndex:qi, optionIndex:oi });
+  screenGodQuestion(qi+1);
 }
 
 /* ---------- 화면: 4 결과 ---------- */
@@ -558,8 +566,9 @@ function generateLifeLines(){
   const childrenLine = { text: childrenResult.text, point: 0 };
   const deathLine = { text: `${rand(state.race.deaths)} 죽음을 맞았다.`, point: 0 };
 
-  const cardCount = GRADE_CARD_COUNTS[state.grade] || 1;
-  const cardLines = rollAchievementCards(cardCount).map(c=>({ text: c.text, point: c.point }));
+  // 업적카드는 이제 beginQuestions()에서 미리 뽑아 state.drawnCards에 담아둔다
+  // (질문을 던질 신을 정하려면 결과 화면보다 먼저 카드를 알아야 하기 때문).
+  const cardLines = (state.drawnCards || []).map(c=>({ text: c.text, point: c.point }));
 
   return {
     lines: [birthLine, jobLine, childrenLine, ...cardLines, deathLine],
@@ -613,9 +622,11 @@ function screenResult(){
   } else {
     state.pendingChild = null;
   }
-  // 이번 생을 만드는 데 쓴 상속 정보는 소비했으니 초기화 (다음 전개부터는 일반 흐름)
+  // 이번 생을 만드는 데 쓴 상속/카드/질문 정보는 소비했으니 초기화 (다음 전개부터는 일반 흐름)
   state.inheritedBirthYear = null;
   state.isChildContinuation = false;
+  state.drawnCards = null;
+  state.questionQueue = null;
 
   setCardHTML(progressDots(3,4) + `
     <div class="portrait-slot">${state.race.icon}</div>

@@ -4,7 +4,8 @@
   "main": "game-logic.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "sync:achievements": "node scripts/sync-achievements.js"
+    "sync:achievements": "node scripts/sync-achievements.js",
+    "sync:questions": "node scripts/sync-questions.js"
   },
   "repository": {
     "type": "git",
