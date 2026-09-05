@@ -54,6 +54,17 @@
     border:1px solid rgba(201,162,75,0.15);
     pointer-events:none;
   }
+  /* 화면(스텝) 전환 시 새 내용이 위에서 아래로 슬라이드 다운되며 나타남 */
+  @keyframes cardSlideDown{
+    from{ opacity:0; transform:translateY(-22px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .card.slide-down{
+    animation: cardSlideDown 0.38s cubic-bezier(0.22,0.61,0.36,1);
+  }
+  @media (prefers-reduced-motion: reduce){
+    .card.slide-down{ animation:none; }
+  }
   .step-title{
     font-size:18px;
     color:var(--ink);

@@ -331,6 +331,14 @@ function resetSidePanels(){
   if(sidePanelsEl) sidePanelsEl.innerHTML = '';
 }
 
+// 화면 전환 시 카드 내용을 위에서 아래로 슬라이드 다운시키며 교체한다
+function setCardHTML(html){
+  card.innerHTML = html;
+  card.classList.remove('slide-down');
+  void card.offsetWidth; // 강제 리플로우: 애니메이션 재시작
+  card.classList.add('slide-down');
+}
+
 function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
 const STAT_MAX = 18;
@@ -377,7 +385,7 @@ function progressDots(step,total){
 /* ---------- 화면: 0 시작 ---------- */
 function screenStart(){
   resetSidePanels();
-  card.innerHTML = `
+  setCardHTML(`
     <p class="step-title">주사위를 굴려 새로운 삶을 시작한다.<br>당신이 될 존재는, 굴려보기 전엔 아무도 모른다.</p>
     <div class="choice-grid">
       <button class="choice" onclick="screenRace()">
@@ -385,14 +393,14 @@ function screenStart(){
         <span class="desc">종족 · 스탯 · 성향을 정하고 한 생을 산다</span>
       </button>
     </div>
-  `;
+  `);
   foot.textContent = "";
 }
 
 /* ---------- 화면: 1 종족 뽑기 ---------- */
 function screenRace(){
   resetSidePanels();
-  card.innerHTML = progressDots(0,4) + `
+  setCardHTML(progressDots(0,4) + `
     <p class="step-title">주사위가 종족을 정한다.</p>
     <div class="choice-grid">
       <button class="choice" onclick="rollRace()">
@@ -400,7 +408,7 @@ function screenRace(){
         <span class="desc">인간부터 아라크네까지, 13종족 중 하나</span>
       </button>
     </div>
-  `;
+  `);
 }
 function rollRace(){
   state.race = pickWeightedRace();
@@ -413,7 +421,7 @@ function rollRace(){
 /* ---------- 화면: 2 스탯 ---------- */
 function screenStats(){
   state.stats = rollStats();
-  card.innerHTML = progressDots(1,4) + `
+  setCardHTML(progressDots(1,4) + `
     <p class="step-title">${state.race.icon} <b style="color:var(--gold)">${state.name}</b><br><span style="font-size:13px;color:#b09892">${state.gender} · ${state.race.name}(으)로 태어났다</span></p>
     ${renderStatRow(state.stats)}
     <div class="choice-grid">
@@ -422,14 +430,14 @@ function screenStats(){
         <span class="desc">이 삶의 성향을 정한다</span>
       </button>
     </div>
-  `;
+  `);
 }
 
 /* ---------- 화면: 3 성향 질문 ---------- */
 function screenQuestion(i){
   if(i >= PERSONALITY_Q.length){ screenResult(); return; }
   const q = PERSONALITY_Q[i];
-  card.innerHTML = progressDots(2,4) + `
+  setCardHTML(progressDots(2,4) + `
     <p class="step-title">${q.q}</p>
     <div class="choice-grid">
       ${q.opts.map((o,idx)=>`
@@ -438,7 +446,7 @@ function screenQuestion(i){
         </button>
       `).join('')}
     </div>
-  `;
+  `);
 }
 function answerQuestion(qi, oi){
   const opt = PERSONALITY_Q[qi].opts[oi];
@@ -563,7 +571,7 @@ function screenResult(){
   const deathYear = birthYear + ages[ages.length-1];
   const grade = raceGrade(state.race);
 
-  card.innerHTML = progressDots(3,4) + `
+  setCardHTML(progressDots(3,4) + `
     <div class="portrait-slot">${state.race.icon}</div>
     <p class="race-name">${state.name}</p>
     <div class="grade-badge-wrap"><span class="grade-badge">${grade}</span></div>
@@ -581,7 +589,7 @@ function screenResult(){
       <button class="btn" onclick="screenRace()">🎲 다시 환생</button>
       <button class="btn ghost" onclick="screenStart()">처음으로</button>
     </div>
-  `;
+  `);
   foot.textContent = "기여 포인트는 누적되면 로어포인트로 전환됩니다 (프로토타입: 미저장)";
 
   const record = {
