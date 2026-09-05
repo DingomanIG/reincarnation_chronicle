@@ -333,7 +333,13 @@ async function fetchWorldRecords(){
 }
 
 /* ---------- 상태 ---------- */
-let state = { race:null, grade:null, stats:null, traits:[], name:null, gender:null };
+let state = {
+  race:null, grade:null, stats:null, traits:[], name:null, gender:null,
+  // 자식으로 이어가기 기능용 상태
+  pendingChild:null,        // 이번 생 결과에서 넘겨줄 자식 정보 { race, origin, birthYear }
+  inheritedBirthYear:null,  // 자식으로 이어갈 때 물려받는 출생년도
+  isChildContinuation:false // 지금 진행 중인 생이 "자식으로 이어가기"로 시작됐는지
+};
 
 const card = document.getElementById('card');
 const foot = document.getElementById('foot');
@@ -428,6 +434,9 @@ function screenRace(){
   `);
 }
 function rollRace(){
+  // 완전히 새로운 환생이므로, 혹시 남아있을 자식 이어가기 상태는 초기화한다
+  state.inheritedBirthYear = null;
+  state.isChildContinuation = false;
   state.race = pickWeightedRace();
   state.grade = raceGrade(state.race);
   state.name = genName(state.race.key);
@@ -436,16 +445,37 @@ function rollRace(){
   screenStats();
 }
 
+// 직전 생에서 자식을 두었을 때, 그 자식으로 이어서 플레이한다.
+// 종족/출신은 그대로 물려받고(랜덤 재추첨 없음), 이름·스탯은 새로 굴린다.
+// 종족 굴리기 화면은 건너뛰고, 성향 질문 화면도 건너뛴다.
+function continueAsChild(){
+  const pending = state.pendingChild;
+  if(!pending) return;
+  state.race = pending.race;
+  state.grade = raceGrade(pending.race);
+  state.name = genName(pending.race.key);
+  state.gender = rand(GENDERS);
+  state.origin = pending.origin;
+  state.traits = [];
+  state.inheritedBirthYear = pending.birthYear;
+  state.isChildContinuation = true;
+  state.pendingChild = null;
+  screenStats();
+}
+
 /* ---------- 화면: 2 스탯 ---------- */
 function screenStats(){
+  resetSidePanels();
   state.stats = rollStats();
+  const nextAction = state.isChildContinuation ? "screenResult()" : "screenQuestion(0)";
+  const nextDesc = state.isChildContinuation ? "성향 질문은 건너뛰고 바로 삶을 살아본다" : "이 삶의 성향을 정한다";
   setCardHTML(progressDots(1,4) + `
     <p class="step-title">${state.race.icon} <b style="color:var(--gold)">${state.name}</b><br><span style="font-size:13px;color:var(--ink-soft)">${state.gender} · ${state.race.name}(으)로 태어났다</span></p>
     ${renderStatRow(state.stats)}
     <div class="choice-grid">
-      <button class="choice" onclick="screenQuestion(0)">
+      <button class="choice" onclick="${nextAction}">
         <span class="name">다음 →</span>
-        <span class="desc">이 삶의 성향을 정한다</span>
+        <span class="desc">${nextDesc}</span>
       </button>
     </div>
   `);
@@ -493,41 +523,48 @@ function genSpouseName(race, selfName){
   return name;
 }
 
+// hasChildren: "자식으로 이어가기" 버튼을 보여줄지 판단하는 데 쓰인다
 function genChildrenLine(race, selfName){
   const [min,max] = race.childrenRange;
   const n = min + Math.floor(Math.random()*(max-min+1));
   const married = Math.random() < 0.75; // 75% 확률로 혼인
 
   if(!married){
-    return rand(["끝내 혼인하지 않고 홀로 생을 지켰다.","평생 홀로 떠도는 삶을 택했다."]);
+    return { text: rand(["끝내 혼인하지 않고 홀로 생을 지켰다.","평생 홀로 떠도는 삶을 택했다."]), hasChildren:false };
   }
 
   const spouse = genSpouseName(race, selfName);
   const j = josaWaGwa(spouse);
 
   if(n === 0){
-    return `${spouse}${j} 혼인했으나 자식은 두지 못했다.`;
+    return { text: `${spouse}${j} 혼인했으나 자식은 두지 못했다.`, hasChildren:false };
   }
   if(n === 1){
-    return `${spouse}${j} 혼인해 슬하에 자식 하나를 두었다.`;
+    return { text: `${spouse}${j} 혼인해 슬하에 자식 하나를 두었다.`, hasChildren:true };
   }
-  return `${spouse}${j} 혼인해 슬하에 자식 ${n}명을 두었다.`;
+  return { text: `${spouse}${j} 혼인해 슬하에 자식 ${n}명을 두었다.`, hasChildren:true };
 }
 
 // 생애 구조: 출생(0pt) -> 직업(0pt) -> 자녀/혼인줄(0pt) -> 업적카드 N장(등급별 장수) -> 사망(0pt)
 // (기존 race.lines / traits / RANDOM_EVENTS 조합은 업적카드 시스템으로 대체되었다.
 //  traits 자체는 성향 질문 화면 유지를 위해 계속 수집하지만, 생애 텍스트 생성에는 더 이상 쓰이지 않는다.)
+// 반환값: { lines: [{text,point}...], hasChildren }
+// (자녀 줄은 항상 인덱스 2에 고정되므로, ages[2]가 곧 "자식을 본 나이"가 된다 -> 자식으로 이어가기의 출생년도 계산에 사용)
 function generateLifeLines(){
   const birthLine = { text: `${rand(state.race.birthPlaces)}에서, ${rand(state.race.birthParents)} 태어났다.`, point: 0 };
   const job = rand(state.race.jobs);
   const jobLine = { text: `${job}${hasBatchim(job) ? "으로" : "로"} 살아가기 시작했다.`, point: 0 };
-  const childrenLine = { text: genChildrenLine(state.race, state.name), point: 0 };
+  const childrenResult = genChildrenLine(state.race, state.name);
+  const childrenLine = { text: childrenResult.text, point: 0 };
   const deathLine = { text: `${rand(state.race.deaths)} 죽음을 맞았다.`, point: 0 };
 
   const cardCount = GRADE_CARD_COUNTS[state.grade] || 1;
   const cardLines = rollAchievementCards(cardCount).map(c=>({ text: c.text, point: c.point }));
 
-  return [birthLine, jobLine, childrenLine, ...cardLines, deathLine];
+  return {
+    lines: [birthLine, jobLine, childrenLine, ...cardLines, deathLine],
+    hasChildren: childrenResult.hasChildren
+  };
 }
 
 // 이제 각 줄(lines)이 이미 point를 담고 있으므로, 그대로 추출만 한다.
@@ -554,13 +591,31 @@ function generateAges(count, race){
 }
 
 function screenResult(){
-  const lines = generateLifeLines(); // [{text, point}, ...]
+  const { lines, hasChildren } = generateLifeLines(); // lines: [{text, point}, ...]
   const ages = generateAges(lines.length, state.race);
   const points = generateLifePoints(lines);
   const totalPoints = points.reduce((a,b)=>a+b,0);
-  const birthYear = 100 + Math.floor(Math.random()*900);
+  // 자식으로 이어가기로 시작한 생이면 물려받은 출생년도를 쓰고, 아니면 새로 굴린다
+  const birthYear = state.inheritedBirthYear != null
+    ? state.inheritedBirthYear
+    : 100 + Math.floor(Math.random()*900);
   const deathYear = birthYear + ages[ages.length-1];
   const grade = state.grade;
+
+  // 자녀 줄은 항상 인덱스 2 -> ages[2]가 "자식을 본 나이". 이 생의 출생년도 기준으로
+  // 다음 세대(자식)의 출생년도를 계산해 이어가기 버튼에 실어 보낸다.
+  if(hasChildren){
+    state.pendingChild = {
+      race: state.race,
+      origin: state.origin,
+      birthYear: birthYear + ages[2]
+    };
+  } else {
+    state.pendingChild = null;
+  }
+  // 이번 생을 만드는 데 쓴 상속 정보는 소비했으니 초기화 (다음 전개부터는 일반 흐름)
+  state.inheritedBirthYear = null;
+  state.isChildContinuation = false;
 
   setCardHTML(progressDots(3,4) + `
     <div class="portrait-slot">${state.race.icon}</div>
@@ -578,6 +633,7 @@ function screenResult(){
     </div>
     <div class="actions">
       <button class="btn" onclick="screenRace()">🎲 다시 환생</button>
+      ${hasChildren ? `<button class="btn" onclick="continueAsChild()">👶 자식으로 이어가기</button>` : ''}
       <button class="btn ghost" onclick="screenStart()">처음으로</button>
     </div>
   `);
