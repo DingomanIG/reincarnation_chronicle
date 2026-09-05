@@ -24,13 +24,6 @@
     width:100%;
     max-width:520px;
   }
-  .mark{
-    text-align:center;
-    letter-spacing:0.35em;
-    font-size:11px;
-    color:var(--gold-dim);
-    margin-bottom:6px;
-  }
   h1{
     text-align:center;
     font-size:28px;
