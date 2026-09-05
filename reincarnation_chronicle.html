@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>환생 연대기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#f1ede2;
+    --void:#201c1c;
+    --void2:#2b2626;
+    --gold:#e2100a;
+    --gold-dim:#f65622;
+    --line:#4a4040;
+    --red:#f65622;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse at 50% -10%, #2f2626 0%, var(--void) 55%);
+    color:var(--ink);
+    font-family:'Inter','Noto Sans KR',sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:32px 16px 64px;
+  }
+  .stage{
+    width:100%;
+    max-width:520px;
+  }
+  .mark{
+    text-align:center;
+    letter-spacing:0.35em;
+    font-size:11px;
+    color:var(--gold-dim);
+    margin-bottom:6px;
+  }
+  h1{
+    text-align:center;
+    font-size:28px;
+    font-weight:400;
+    margin:0 0 4px;
+    color:var(--gold);
+    letter-spacing:0.04em;
+    font-family:'Anton','Noto Sans KR',sans-serif;
+  }
+  .sub{
+    text-align:center;
+    font-size:13px;
+    color:#a8908a;
+    margin-bottom:28px;
+    font-style:italic;
+  }
+  .card{
+    background:var(--void2);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:28px 24px;
+    position:relative;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    inset:6px;
+    border:1px solid rgba(201,162,75,0.15);
+    pointer-events:none;
+  }
+  .step-title{
+    font-size:18px;
+    color:var(--ink);
+    margin:0 0 18px;
+    text-align:center;
+    font-family:'Anton','Noto Sans KR',sans-serif;
+    font-weight:400;
+  }
+  .choice-grid{
+    display:grid;
+    gap:10px;
+  }
+  .choice{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-family:inherit;
+    font-size:15px;
+    padding:14px 16px;
+    text-align:left;
+    cursor:pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .choice:hover, .choice:focus-visible{
+    border-color:var(--gold);
+    background:rgba(201,162,75,0.06);
+    outline:none;
+  }
+  .choice .name{
+    display:block;
+    font-size:16px;
+    color:var(--gold);
+    margin-bottom:2px;
+    font-family:'Anton','Noto Sans KR',sans-serif;
+    font-weight:400;
+  }
+  .choice .desc{
+    display:block;
+    font-size:12.5px;
+    color:#b09892;
+  }
+  .progress{
+    display:flex;
+    justify-content:center;
+    gap:6px;
+    margin-bottom:20px;
+  }
+  .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--line);
+  }
+  .dot.done{background:var(--gold-dim);}
+  .dot.active{background:var(--gold);}
+
+  /* Result */
+  .portrait-slot{
+    width:64px;height:64px;
+    margin:0 auto 16px;
+    border:1px solid var(--gold-dim);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;
+    color:var(--gold);
+    background:radial-gradient(circle at 35% 30%, #3a201d, #1c0f0e);
+  }
+  .race-name{
+    text-align:center;
+    font-size:22px;
+    color:var(--gold);
+    margin:0 0 2px;
+    font-family:'Anton','Noto Sans KR',sans-serif;
+    font-weight:400;
+  }
+  .race-tag{
+    text-align:center;
+    font-size:12px;
+    color:#a8908a;
+    margin-bottom:20px;
+    letter-spacing:0.08em;
+  }
+  .life-lines{
+    list-style:none;
+    margin:0 0 22px;
+    padding:0;
+    border-top:1px solid var(--line);
+  }
+  .life-lines li{
+    padding:11px 2px;
+    border-bottom:1px solid var(--line);
+    font-size:14.5px;
+    line-height:1.5;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+  }
+  .life-lines li .pt{
+    margin-left:auto;
+    flex-shrink:0;
+    font-size:11px;
+    color:var(--gold-dim);
+    padding-top:2px;
+    white-space:nowrap;
+  }
+  .total-points{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:14px 16px;
+    margin-bottom:20px;
+    border:1px solid var(--gold-dim);
+    background:rgba(201,162,75,0.06);
+    font-size:13px;
+    color:var(--ink);
+  }
+  .total-points b{
+    color:var(--gold);
+    font-size:20px;
+    font-weight:400;
+    font-family:'Anton','Noto Sans KR',sans-serif;
+  }
+  .life-lines li .yr{
+    color:var(--gold-dim);
+    font-size:11px;
+    min-width:52px;
+    line-height:1.4;
+    padding-top:2px;
+  }
+  .life-lines li:last-child{
+    border-bottom:none;
+    color:#e0b8ac;
+  }
+  .life-lines li:last-child .yr{
+    color:var(--red);
+  }
+  .stat-row{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    font-size:12px;
+    color:#a8908a;
+    margin-bottom:20px;
+    padding:10px;
+    background:rgba(255,255,255,0.02);
+    border:1px solid var(--line);
+  }
+  .stat-row span{
+    text-align:center;
+  }
+  .stat-row span b{
+    display:block;
+    color:var(--ink);
+    font-size:15px;
+    font-weight:400;
+    margin:2px 0;
+  }
+  .stat-row span .stat-tag{
+    display:block;
+    font-size:10.5px;
+    color:var(--gold-dim);
+    margin-top:2px;
+    line-height:1.35;
+    letter-spacing:0.01em;
+  }
+  .actions{
+    display:flex;
+    gap:10px;
+  }
+  .btn{
+    flex:1;
+    background:transparent;
+    border:1px solid var(--gold-dim);
+    color:var(--gold);
+    font-family:inherit;
+    font-size:14px;
+    padding:13px;
+    cursor:pointer;
+    transition:all 0.15s ease;
+  }
+  .btn:hover{background:rgba(201,162,75,0.08);border-color:var(--gold);}
+  .btn.ghost{border-color:var(--line);color:#b09892;}
+  .btn.ghost:hover{border-color:#555;color:var(--ink);}
+  footer{
+    text-align:center;
+    font-size:11px;
+    color:#5a4340;
+    margin-top:22px;
+    letter-spacing:0.05em;
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="mark">環 生 年 代 記</div>
+  <h1>환생 연대기</h1>
+  <div class="sub">주사위를 굴려, 낯선 삶 하나를 살아본다</div>
+  <div class="card" id="card"></div>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+/* ---------- 데이터 ---------- */
+const NAME_POOL = {
+  human:{ first:["카일","로한","엘사","마르코","이든","브란","셀린","도린"], last:["강","드보어","펠","하빈","코스타","윌로우"] },
+  elf:{ first:["실바나","에라딘","루메아","탈리온","이센","페라윈"], last:["문베일","실버라이트","에벤타이드","윈드리프"] },
+  dwarf:{ first:["도린","그림바르","우나","보르가","할디르","브룬힐"], last:["강철턱","불꽃수염","돌망치","깊은뿌리"] },
+  orc:{ first:["구락","토그","라샤","크루그","자하","보르크"], last:["뼈부수기","붉은어금니","폭풍주먹","검은상처"] },
+  beastkin:{ first:["루나","케이","아셰","비앙","울프","리엔"], last:["달발톱","서리귀","은빛꼬리","야생눈"] },
+  goblin:{ first:["끽끽","스니크","모글","래트","픽스","자그"], last:["코찔찔이","쓰레기왕","잽싼발","곁눈질"] },
+  ratkin:{ first:["칫칫","니블","스크래치","위스커","모르셀","꾸룩"], last:[] },
+  halfdemon:{ first:["카인","리리스","벨","아자젤","네르","모라이"], last:[] },
+  kobold:{ first:["클릭","스크릿","모크","다그","닙","라토"], last:[] },
+  firbolg:{ first:["오슬로","브리아나","타룬","이보나","그웬돌","마훈"], last:["고요숲","이끼발","안개걸음","오래나무"] },
+  gnome:{ first:["픽셀","토비아스","위즐","코고","넛시","페들"], last:["톱니바퀴","반짝손","작은망치","실험실"] },
+  arachne:{ first:["실키","베놈","아라크","미스트웹","자매실","그림자실"], last:[] },
+  halfelf:{ first:["아리엔","테오","실라스","엘로윈","다미안","리아나"], last:["두빛","경계인","섞인달","반그림자"] }
+};
+function genName(raceKey){
+  const p = NAME_POOL[raceKey];
+  if(["orc","goblin","ratkin","halfdemon","kobold","arachne"].includes(raceKey)){
+    return rand(p.first); // 성씨 없이 이름만
+  }
+  return `${rand(p.first)} ${rand(p.last)}`;
+}
+
+const RACES = [
+  {
+    key:"human", name:"인간", tag:"짧고 뜨겁게 타오르는 자들",
+    icon:"◆", weight:18, lifespan:{avg:50, variance:20}, comingOfAge:[14,18], middleCount:3, childrenRange:[0,4],
+    origins:["아렌 왕국","남부 자유도시 연합","변경 개척지","동부 교역국"],
+    birthPlaces:["변방의 흙벽 마을","성벽 아래 빈민가","강가의 방앗간 마을","국경 근처 주둔지"],
+    birthParents:["대장장이 아버지와 산파 어머니","이름 없는 용병","떠돌이 상인 부부","전쟁으로 남편을 잃은 홀어미"],
+    jobs:["용병","민병대원","산적","상인","서기관","농부"],
+    deaths:["열병으로", "전장의 창칼에", "빚쟁이의 칼에", "노환으로 잠자듯", "낯선 병에", "산적의 습격으로"],
+    lines:[
+      "전쟁이 터지자 손에 잡히는 대로 무기를 들었다.",
+      "낯선 도시에서 이름을 숨기고 살았다.",
+      "친구의 배신으로 모든 것을 잃었다.",
+      "작은 밭 하나를 일구며 살았다."
+    ]
+  },
+  {
+    key:"elf", name:"엘프", tag:"숲의 시간으로 세상을 보는 자들",
+    icon:"❖", weight:2, lifespan:{avg:800, variance:200}, comingOfAge:[25,40], middleCount:6, childrenRange:[0,2],
+    origins:["은빛숲 일족","별지기 혈통","고목의 회랑"],
+    birthPlaces:["천 년 된 숲 가장 깊은 나무 아래","달빛만 닿는 은빛 골짜기","인간의 발길이 닿지 않는 고목 마을"],
+    birthParents:["숲의 수호자 일족","마지막 남은 별지기 혈통","오래전 잊힌 왕가의 후예"],
+    jobs:["궁병 용병","숲의 민병","활잡이","별지기","고서 수집가","정령술사"],
+    deaths:["숲과 함께 스러지며","오랜 슬픔 끝에 스스로","인간의 도끼에 쓰러진 숲을 지키다","시간의 무게에 짓눌려"],
+    lines:[
+      "인간의 짧은 삶을 동정하듯 지켜보았다.",
+      "숲을 침범한 벌목꾼들과 오랜 싸움을 벌였다.",
+      "사랑에 빠졌으나, 상대는 먼저 늙어 죽었다.",
+      "홀로 별을 세는 습관이 생겼다."
+    ]
+  },
+  {
+    key:"dwarf", name:"드워프", tag:"돌과 불 속에서 정직한 자들",
+    icon:"⛏", weight:12, lifespan:{avg:200, variance:40}, comingOfAge:[20,30], middleCount:5, childrenRange:[0,3],
+    origins:["강철턱 씨족","깊은뿌리 산맥국","불꽃수염 동맹"],
+    birthPlaces:["산맥 깊은 광산 마을","불꽃 대장간 골목","백 대에 걸친 굴착지"],
+    birthParents:["대장장이 가문","광산 감독관 부부","이름난 세공사"],
+    jobs:["산악 용병","갱도 민병","징집 전사","대장장이","광부","보석세공사"],
+    deaths:["무너진 갱도에", "과로로 쓰러져", "대장간 불길 속에", "동료를 지키다가", "노환으로 조용히"],
+    lines:[
+      "첫 망치를 쥔 날, 손이 다 부르텄다.",
+      "동료를 무너진 갱도에서 구해냈다.",
+      "명작이라 불릴 물건을 만들었으나 팔지 않았다.",
+      "술과 노래로 슬픔을 잊는 법을 배웠다."
+    ]
+  },
+  {
+    key:"orc", name:"오크", tag:"부족의 명예로 사는 자들",
+    icon:"⚔", weight:22, lifespan:{avg:40, variance:15}, comingOfAge:[12,16], middleCount:2, childrenRange:[0,5],
+    origins:["붉은협곡 부족","폭풍주먹 부족","검은상처 연맹"],
+    birthPlaces:["황무지 전사 부족의 천막","부서진 옛 전장 근처 야영지","붉은 협곡 부족 마을"],
+    birthParents:["부족장의 셋째 아이로","이름 없는 전사의 사생아로","전쟁에서 죽은 족장의 유복자로"],
+    jobs:["부족 용병","징집 전사","약탈단원","부족 사냥꾼","무기 제작자","족장의 호위"],
+    deaths:["결투 끝에 명예롭게","적의 매복에","부족 내분으로","마지막 전투에서","사냥 중 맹수에게"],
+    lines:[
+      "열 살에 처음 무기를 손에 쥐었다.",
+      "부족의 명예를 걸고 결투에서 이겼다.",
+      "패배한 적을 살려주어 부족의 비웃음을 샀다.",
+      "그 결정이 훗날 부족을 구했다."
+    ]
+  },
+  {
+    key:"goblin", name:"고블린", tag:"수적으로 살아남는 자들",
+    icon:"◈", weight:24, lifespan:{avg:25, variance:10}, comingOfAge:[5,8], middleCount:1, childrenRange:[0,8],
+    origins:["쓰레기산 무리","하수도 소굴","폐광 굴 집단"],
+    birthPlaces:["버려진 하수도 굴","쓰레기산 아래 은신처","폐광 깊숙한 굴 소굴"],
+    birthParents:["누구인지도 모를 부모 밑에서","수십 형제자매 틈에서","고아로 무리에게 주워져"],
+    jobs:["잡병 용병","도적떼 일원","해적선 잡부","땜장이","좀도둑","폐품 수집상"],
+    deaths:["더 큰 놈에게 잡아먹혀","함정에 스스로 걸려","굶주림에","무리 싸움에 휘말려","도망치다 벼랑에서"],
+    lines:[
+      "형제 여럿을 눈앞에서 잃고도 살아남았다.",
+      "남들이 버린 것에서 쓸모를 찾아냈다.",
+      "몸집 큰 자들 틈에서 잔꾀로 버텼다.",
+      "아무도 기억 못할 작은 친절을 베풀었다."
+    ]
+  },
+  {
+    key:"beastkin", name:"수인", tag:"본능과 이성 사이를 걷는 자들",
+    icon:"✦", weight:13, lifespan:{avg:60, variance:20}, comingOfAge:[10,14], middleCount:3, childrenRange:[0,4],
+    origins:["달빛 무리","경계땅 유랑단","초원 사냥터 부족"],
+    birthPlaces:["달빛 아래 늑대 무리의 굴","인간 마을과 숲의 경계","이름 없는 초원의 무리터"],
+    birthParents:["무리의 우두머리 밑에서","인간에게 거두어져","떠돌이 무리의 막내로"],
+    jobs:["용병","국경 민병","산적 무리 일원","사냥꾼","약초꾼","떠돌이 안내인"],
+    deaths:["무리를 지키다가","낯선 병에","보름달 아래 조용히","인간과의 충돌에서","늙은 몸으로 홀로"],
+    lines:[
+      "인간 마을 근처를 떠돌며 자랐다.",
+      "누구에게도 완전히 속하지 못했다.",
+      "위기의 순간, 낯선 이를 구하고 신뢰를 얻었다.",
+      "작은 무리를 이루어 정착했다."
+    ]
+  },
+  {
+    key:"ratkin", name:"쥐인간", tag:"틈새에서 번성하는 자들",
+    icon:"⁘", weight:20, lifespan:{avg:20, variance:8}, comingOfAge:[4,6], middleCount:1, childrenRange:[0,10],
+    origins:["하수구 무리","곡물창고 소굴","도시 지하 굴"],
+    birthPlaces:["곡물창고 지하","하수도 미로","버려진 마차 밑"],
+    birthParents:["쥐 떼 속에서 정체 모를 부모 밑에","굶주린 어미 밑에서","무리에게 거두어져"],
+    jobs:["하수구 용병","도적단 일원","해적선 밀항꾼","소매치기","정보상","암거래상"],
+    deaths:["덫에 걸려","포식자에게 쫓기다가","전염병에","동족 다툼에","굶주림에"],
+    lines:[
+      "누구보다 빠르게 달아나는 법을 배웠다.",
+      "좁은 틈 사이로 위기를 피했다.",
+      "무리의 정보망을 장악했다.",
+      "아무도 눈치채지 못하게 스며들었다."
+    ]
+  },
+  {
+    key:"halfdemon", name:"하프데몬", tag:"경계에 선 자들",
+    icon:"❂", weight:3, lifespan:{avg:150, variance:50}, comingOfAge:[15,22], middleCount:4, childrenRange:[0,1],
+    origins:["이름 없는 계약자","추방된 혈통","그림자 시장의 그늘"],
+    birthPlaces:["인간과 마족이 스쳐간 뒷골목","봉인된 제단 근처","국경 밖 그림자 마을"],
+    birthParents:["이름을 밝히지 않은 마족 아버지에게","인간 어머니와 정체불명의 존재 사이에서","계약의 대가로"],
+    jobs:["계약 용병","경계 감시자","산적 두목","봉인술사","암시장 브로커","저주 해석가"],
+    deaths:["봉인의 대가로","경계를 넘다가","오랜 저주 끝에","계약의 반동으로","인간도 마족도 아니란 이유로 배척받다"],
+    lines:[
+      "인간도 마족도 자신을 온전히 받아주지 않았다.",
+      "힘을 억누르는 법을 스스로 익혔다.",
+      "같은 처지의 이를 만나 처음으로 안도했다.",
+      "자신의 존재를 증명하려 애썼다."
+    ]
+  },
+  {
+    key:"kobold", name:"코볼트", tag:"함정과 굴을 사랑하는 자들",
+    icon:"▲", weight:16, lifespan:{avg:30, variance:10}, comingOfAge:[5,8], middleCount:2, childrenRange:[0,6],
+    origins:["붉은굴 부족","광맥 아래 둥지","버려진 던전 개척지"],
+    birthPlaces:["좁은 굴 둥지 속","버려진 광산 통로","돌무더기 밑 은신처"],
+    birthParents:["둥지를 지키는 어미 밑에서","알 무더기 속 여럿과 함께","부족 전체가 함께 돌보아"],
+    jobs:["함정 용병","굴 민병","도적 무리 일원","덫 제작자","광맥 탐지꾼","보물 관리인"],
+    deaths:["자신이 만든 함정에","무너진 굴에","침입자와의 다툼에","독기 가득한 공기에","늙어 조용히"],
+    lines:[
+      "누구보다 정교한 함정을 놓는 법을 배웠다.",
+      "좁은 굴 구석구석을 손바닥 보듯 꿰뚫었다.",
+      "침입자를 골탕먹이는 데서 즐거움을 느꼈다.",
+      "작은 몸집으로 몇 번이나 위기를 피했다."
+    ]
+  },
+  {
+    key:"firbolg", name:"펄보그", tag:"숲과 침묵을 지키는 거인족",
+    icon:"☘", weight:6, lifespan:{avg:90, variance:20}, comingOfAge:[18,25], middleCount:4, childrenRange:[0,2],
+    origins:["안개숲 수호단","고요한 골짜기 씨족","오래된 나무 아래 은둔지"],
+    birthPlaces:["안개 자욱한 숲 깊은 곳","오래된 신단 옆 오두막","이끼 낀 거석 아래"],
+    birthParents:["숲을 지키는 부모 밑에서","조용한 은둔자 가문에서","나무의 축복을 받은 부모에게"],
+    jobs:["숲 민병","방랑 용병","국경 수비대","약초 치유사","고대 유적 관리인","조용한 사냥꾼"],
+    deaths:["숲을 지키다가","고요히 나무 아래서","오래된 저주에","길잃은 이를 구하다가","늙어 자연으로 돌아가듯"],
+    lines:[
+      "말보다 침묵으로 마음을 전하는 법을 익혔다.",
+      "다친 짐승을 그냥 지나치지 못했다.",
+      "거대한 몸집 뒤에 온화한 마음을 숨겼다.",
+      "숲이 위협받을 때만 목소리를 높였다."
+    ]
+  },
+  {
+    key:"gnome", name:"노움", tag:"호기심으로 세상을 뜯어보는 자들",
+    icon:"⚙", weight:7, lifespan:{avg:300, variance:60}, comingOfAge:[25,45], middleCount:5, childrenRange:[0,3],
+    origins:["톱니바퀴 공방 마을","지하 발명가 조합","이끼정원 은신처"],
+    birthPlaces:["발명품 가득한 작업실","지하 공방 마을","버섯 정원 옆 오두막"],
+    birthParents:["발명가 부모 밑에서","조합 소속 장인 가문에서","호기심 많은 학자 부모에게"],
+    jobs:["기계병 용병","공방 민병대원","폭발물 징집병","발명가","환영술사","연금술사"],
+    deaths:["실험 도중 폭발로","오랜 연구 끝에 조용히","기계 오작동에","호기심을 좇다가","노환으로"],
+    lines:[
+      "쉬지 않고 무언가를 분해하고 다시 조립했다.",
+      "작은 발명품 하나로 마을을 놀라게 했다.",
+      "위험한 실험을 몇 번이나 반복했다.",
+      "환영과 진짜를 구분 못하게 만드는 재주가 있었다."
+    ]
+  },
+  {
+    key:"arachne", name:"아라크네", tag:"실을 짜 세상을 엮는 자들",
+    icon:"❋", weight:3, lifespan:{avg:80, variance:25}, comingOfAge:[4,7], middleCount:3, childrenRange:[0,20],
+    origins:["거미줄 회랑","숨겨진 협곡 둥지","버려진 탑의 그늘"],
+    birthPlaces:["거미줄 뒤덮인 탑 꼭대기","협곡 깊은 둥지","오래된 신전의 그늘"],
+    birthParents:["알집에서 수십 형제와 함께","고독한 어미의 마지막 알에서","이름 모를 자매들 틈에서"],
+    jobs:["용병 자객","협곡 산적","그림자 암살자","실 짜는 장인","독 조제사","정보 수집가"],
+    deaths:["자신의 거미줄에 얽혀","독에 중독되어","사냥꾼에게 쫓기다가","동족과의 다툼에","늙어 실을 놓으며"],
+    lines:[
+      "누구도 눈치채지 못하게 그림자에 숨는 법을 익혔다.",
+      "정교한 거미줄로 함정을 완성했다.",
+      "낯선 이를 유인해 정보를 캐냈다.",
+      "고독을 두려워하지 않는 법을 배웠다."
+    ]
+  },
+  {
+    key:"halfelf", name:"하프엘프", tag:"두 세계 사이에서 태어난 자들",
+    icon:"◇", weight:5, lifespan:{avg:150, variance:40}, comingOfAge:[16,20], middleCount:4, childrenRange:[0,3],
+    origins:["국경 마을 혼혈 공동체","인간 왕국 변방 가문","숲과 도시 사이 정착지"],
+    birthPlaces:["인간과 엘프가 함께 사는 변경 마을","숲과 도시 경계의 여관","혼혈을 받아준 작은 공동체"],
+    birthParents:["인간 아버지와 엘프 어머니 사이에서","엘프 아버지와 인간 어머니 사이에서","서로 다른 두 세계의 부모 밑에서"],
+    jobs:["용병 대장","국경 민병","해적 항해사","방랑 음유시인","외교 중개인","이야기 수집가"],
+    deaths:["오랜 방랑 끝에","두 세계 모두에게 잊혀진 채","전장에서 명예롭게","조용한 여관에서 노환으로","경계를 넘다 사고로"],
+    lines:[
+      "어느 쪽에도 완전히 속하지 못한 채 자랐다.",
+      "두 언어와 두 문화를 오가며 살았다.",
+      "인간의 열정과 엘프의 인내를 동시에 지녔다.",
+      "경계인이라는 이유로 오히려 많은 곳을 넘나들었다."
+    ]
+  }
+];
+
+function pickWeightedRace(){
+  const total = RACES.reduce((s,r)=>s+r.weight,0);
+  let roll = Math.random()*total;
+  for(const r of RACES){
+    if(roll < r.weight) return r;
+    roll -= r.weight;
+  }
+  return RACES[0];
+}
+
+const GENDERS = ["남성","여성"];
+
+const PERSONALITY_Q = [
+  {
+    q:"위기의 순간, 당신은?",
+    opts:[
+      {label:"앞으로 나선다", trait:"용맹", line:"위험 앞에서 물러서지 않는 성정이 평판을 만들었다."},
+      {label:"동료를 먼저 챙긴다", trait:"의리", line:"자신보다 곁의 사람을 먼저 살피는 이로 기억되었다."},
+      {label:"조용히 계산한다", trait:"신중", line:"성급함 대신 계산이 여러 번 목숨을 구했다."}
+    ]
+  },
+  {
+    q:"가장 견디기 힘든 것은?",
+    opts:[
+      {label:"배신", trait:"강직", line:"한 번의 배신을 평생 잊지 않고 새겼다."},
+      {label:"무의미함", trait:"이상주의", line:"의미 없는 삶을 견디지 못해 늘 무언가를 좇았다."},
+      {label:"외로움", trait:"정情", line:"혼자 남는 것을 가장 두려워하며 살았다."}
+    ]
+  }
+];
+
+const RANDOM_EVENTS = [
+  "이름 모를 병에 걸렸으나 기적처럼 나았다.",
+  "가뭄이 마을을 덮쳐 살던 곳을 떠나야 했다.",
+  "대홍수로 터전을 잃고 낯선 땅으로 이주했다.",
+  "흉작이 몇 해나 이어져 살길을 찾아 먼 곳으로 떠났다.",
+  "전쟁이 터지며 원치 않게 전장에 휘말렸다.",
+  "이웃 세력의 침공으로 고향이 불타 없어졌다.",
+  "낯선 이민족이 밀려들어 살던 땅을 등져야 했다.",
+  "역병이 마을을 휩쓸어 절반 넘는 이웃을 잃었다.",
+  "밤사이 죽은 자들이 일어나 마을이 아수라장이 되었다.",
+  "정체 모를 저주가 땅에 내려 사람들이 하나둘 떠났다.",
+  "광신도 무리가 나타나 마을을 혼란에 빠뜨렸다.",
+  "전투에서 세운 공으로 부대를 이끄는 자리에 올랐다.",
+  "오랜 공적을 인정받아 기사 작위를 받았다.",
+  "능력을 인정받아 지역 관료로 임명되었다.",
+  "전공을 쌓아 장군의 자리에까지 올랐다.",
+  "오랜 원수와 우연히 재회했다.",
+  "잃어버렸던 물건을 엉뚱한 곳에서 되찾았다.",
+  "축제의 밤, 평생 잊지 못할 춤을 추었다.",
+  "낯선 땅에서 길을 잃고 헤맸다.",
+  "누군가의 마지막 부탁을 들어주었다.",
+  "홀로 국경을 넘었다.",
+  "폭풍우 치던 밤, 낯선 이를 집에 들였다."
+];
+
+/* ---------- 상태 ---------- */
+let state = { race:null, stats:null, traits:[], name:null, gender:null };
+
+const card = document.getElementById('card');
+const foot = document.getElementById('foot');
+
+function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+const STAT_MAX = 18;
+const STAT_MIN = 3;
+
+// 낮은 값이 확 잘 나오도록 강하게 치우친 굴림 (지수를 키울수록 저구간에 쏠림)
+function rollStats(){
+  const roll = () => STAT_MIN + Math.floor(Math.pow(Math.random(), 2.6) * (STAT_MAX - STAT_MIN + 1));
+  return { 힘:roll(), 지혜:roll(), 매력:roll() };
+}
+
+// 스탯별 5단계 태그 (최저/낮음/평범/높음/최고) - 위트있게
+const STAT_TAGS = {
+  힘:   ["젓가락도 못 드는 팔", "고양이한테도 밀림", "그럭저럭 쓸만한 팔뚝", "황소도 밀어붙임", "한 손으로 성문을 뜯음"],
+  지혜: ["어제 한 말도 까먹음", "구구단이 아직도 헷갈림", "책은 읽는데 기억은 못함", "한 번 보면 잊지 않음", "현자들이 조언을 구하러 옴"],
+  매력: ["코끼리가 밟고 지나간 얼굴", "정들면 봐줄만한 얼굴", "지나가다 한번쯤 돌아볼 얼굴", "거리의 이목을 끄는 얼굴", "보는 순간 숨이 멎는 얼굴"]
+};
+function statTag(statName, value){
+  const tiers = STAT_TAGS[statName];
+  if(value <= 5) return tiers[0];
+  if(value <= 8) return tiers[1];
+  if(value <= 12) return tiers[2];
+  if(value <= 15) return tiers[3];
+  return tiers[4];
+}
+function renderStatRow(stats){
+  return `
+    <div class="stat-row">
+      ${Object.keys(stats).map(key => `
+        <span>${key}<b>${stats[key]}/${STAT_MAX}</b><span class="stat-tag">${statTag(key, stats[key])}</span></span>
+      `).join('')}
+    </div>
+  `;
+}
+
+function progressDots(step,total){
+  let h = '<div class="progress">';
+  for(let i=0;i<total;i++){
+    h += `<div class="dot ${i<step?'done':''} ${i===step?'active':''}"></div>`;
+  }
+  return h + '</div>';
+}
+
+/* ---------- 화면: 0 시작 ---------- */
+function screenStart(){
+  card.innerHTML = `
+    <p class="step-title">주사위를 굴려 새로운 삶을 시작한다.<br>당신이 될 존재는, 굴려보기 전엔 아무도 모른다.</p>
+    <div class="choice-grid">
+      <button class="choice" onclick="screenRace()">
+        <span class="name">🎲 환생하기</span>
+        <span class="desc">종족 · 스탯 · 성향을 정하고 한 생을 산다</span>
+      </button>
+    </div>
+  `;
+  foot.textContent = "";
+}
+
+/* ---------- 화면: 1 종족 뽑기 ---------- */
+function screenRace(){
+  card.innerHTML = progressDots(0,4) + `
+    <p class="step-title">주사위가 종족을 정한다.</p>
+    <div class="choice-grid">
+      <button class="choice" onclick="rollRace()">
+        <span class="name">🎲 종족 굴리기</span>
+        <span class="desc">인간부터 아라크네까지, 13종족 중 하나</span>
+      </button>
+    </div>
+  `;
+}
+function rollRace(){
+  state.race = pickWeightedRace();
+  state.name = genName(state.race.key);
+  state.gender = rand(GENDERS);
+  state.origin = rand(state.race.origins);
+  screenStats();
+}
+
+/* ---------- 화면: 2 스탯 ---------- */
+function screenStats(){
+  state.stats = rollStats();
+  card.innerHTML = progressDots(1,4) + `
+    <p class="step-title">${state.race.icon} <b style="color:var(--gold)">${state.name}</b><br><span style="font-size:13px;color:#b09892">${state.gender} · ${state.race.name}(으)로 태어났다</span></p>
+    ${renderStatRow(state.stats)}
+    <div class="choice-grid">
+      <button class="choice" onclick="screenQuestion(0)">
+        <span class="name">다음 →</span>
+        <span class="desc">이 삶의 성향을 정한다</span>
+      </button>
+    </div>
+  `;
+}
+
+/* ---------- 화면: 3 성향 질문 ---------- */
+function screenQuestion(i){
+  if(i >= PERSONALITY_Q.length){ screenResult(); return; }
+  const q = PERSONALITY_Q[i];
+  card.innerHTML = progressDots(2,4) + `
+    <p class="step-title">${q.q}</p>
+    <div class="choice-grid">
+      ${q.opts.map((o,idx)=>`
+        <button class="choice" onclick="answerQuestion(${i},${idx})">
+          <span class="name">${o.label}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+function answerQuestion(qi, oi){
+  const opt = PERSONALITY_Q[qi].opts[oi];
+  state.traits.push(opt);
+  screenQuestion(qi+1);
+}
+
+/* ---------- 화면: 4 결과 ---------- */
+function hasBatchim(str){
+  const ch = str.trim().slice(-1);
+  const code = ch.charCodeAt(0) - 0xAC00;
+  if(code < 0 || code > 11171) return false;
+  return (code % 28) !== 0;
+}
+function josaWaGwa(word){
+  return hasBatchim(word) ? "과" : "와";
+}
+
+function genSpouseName(race, selfName){
+  let name = genName(race.key);
+  let tries = 0;
+  while(name === selfName && tries < 10){
+    name = genName(race.key);
+    tries++;
+  }
+  return name;
+}
+
+function genChildrenLine(race, selfName){
+  const [min,max] = race.childrenRange;
+  const n = min + Math.floor(Math.random()*(max-min+1));
+  const married = Math.random() < 0.75; // 75% 확률로 혼인
+
+  if(!married){
+    return rand(["끝내 혼인하지 않고 홀로 생을 지켰다.","평생 홀로 떠도는 삶을 택했다."]);
+  }
+
+  const spouse = genSpouseName(race, selfName);
+  const j = josaWaGwa(spouse);
+
+  if(n === 0){
+    return `${spouse}${j} 혼인했으나 자식은 두지 못했다.`;
+  }
+  if(n === 1){
+    return `${spouse}${j} 혼인해 슬하에 자식 하나를 두었다.`;
+  }
+  return `${spouse}${j} 혼인해 슬하에 자식 ${n}명을 두었다.`;
+}
+
+function generateLifeLines(){
+  const raceLines = [...state.race.lines];
+  const traitLines = state.traits.map(t=>t.line);
+
+  const birthLine = `${rand(state.race.birthPlaces)}에서, ${rand(state.race.birthParents)} 태어났다.`;
+  const job = rand(state.race.jobs);
+  const jobLine = `${job}${hasBatchim(job) ? "으로" : "로"} 살아가기 시작했다.`;
+  const deathLine = `${rand(state.race.deaths)} 죽음을 맞았다.`;
+
+  // 중간 사건: 종족 수명에 따라 개수가 다름 (단명종 적게 / 장생종 많게)
+  // 20% 종족 고유 / 30% 성향 / 50% 완전 랜덤
+  const eventSlots = Math.max(0, state.race.middleCount - 1); // 자녀 줄 하나는 별도로 확보
+  const middle = [];
+  for(let n=0;n<eventSlots;n++){
+    const r = Math.random();
+    let picked;
+    if(r < 0.20 && raceLines.length){
+      picked = raceLines.shift();
+    } else if(r < 0.50 && traitLines.length){
+      const idx = Math.floor(Math.random()*traitLines.length);
+      picked = traitLines.splice(idx,1)[0];
+    } else {
+      picked = rand(RANDOM_EVENTS);
+    }
+    if(!picked) picked = raceLines.shift() || rand(RANDOM_EVENTS);
+    middle.push(picked);
+  }
+
+  // 자녀 줄은 한 줄로 몰아서, 중간 사건들 사이 랜덤 위치에 삽입
+  const childrenLine = genChildrenLine(state.race, state.name);
+  const insertAt = Math.floor(Math.random()*(middle.length+1));
+  middle.splice(insertAt, 0, childrenLine);
+
+  return [birthLine, jobLine, ...middle, deathLine];
+}
+
+function generateLifePoints(count){
+  // [출생, 직업, 중간..., 사망] 구조에 맞춰 줄마다 기여 포인트를 부여
+  const pts = [5]; // 출생
+  pts.push(6 + Math.floor(Math.random()*5)); // 직업 시작: 6~10
+  const middleCount = count - 3;
+  for(let i=0;i<middleCount;i++){
+    pts.push(6 + Math.floor(Math.random()*10)); // 중간 사건: 6~15
+  }
+  pts.push(12 + Math.floor(Math.random()*14)); // 사망: 12~25
+  return pts;
+}
+function generateAges(count, race){
+  // 종족 평균수명(lifespan)에 비례해 생애 전체 나이를 배분한다
+  const { avg, variance } = race.lifespan;
+  const deathAge = Math.max(5, Math.round(avg + (Math.random()*2-1)*variance));
+
+  const [comeMin, comeMax] = race.comingOfAge;
+  const jobAge = Math.max(1, Math.min(deathAge-1, comeMin + Math.floor(Math.random()*(comeMax-comeMin+1))));
+  const ages = [0, jobAge]; // 출생, 직업 시작
+  const middleCount = count - 3;
+  const span = Math.max(1, deathAge - jobAge - 1);
+  for(let i=1;i<=middleCount;i++){
+    const t = i/(middleCount+1); // 0~1 사이 진행률
+    const jitter = Math.round((Math.random()-0.5)*span*0.2);
+    ages.push(Math.min(deathAge-1, jobAge + Math.round(span*t) + jitter));
+  }
+  ages.push(deathAge); // 사망
+  return ages;
+}
+
+function screenResult(){
+  const lines = generateLifeLines();
+  const ages = generateAges(lines.length, state.race);
+  const points = generateLifePoints(lines.length);
+  const totalPoints = points.reduce((a,b)=>a+b,0);
+  const birthYear = 100 + Math.floor(Math.random()*900);
+
+  card.innerHTML = progressDots(3,4) + `
+    <div class="portrait-slot">${state.race.icon}</div>
+    <p class="race-name">${state.name}</p>
+    <p class="race-tag">${state.gender} · ${state.race.name} · ${state.origin}</p>
+    <p style="text-align:center;font-size:11px;color:#7a5f5a;margin:-14px 0 20px;font-style:italic;">${state.race.tag}</p>
+    ${renderStatRow(state.stats)}
+    <ul class="life-lines">
+      ${lines.map((l,idx)=>`<li><span class="yr">${birthYear + ages[idx]}년<br>(${ages[idx]}세)</span><span>${l}</span><span class="pt">+${points[idx]}</span></li>`).join('')}
+    </ul>
+    <div class="total-points">
+      <span>이번 생의 기여 포인트</span>
+      <b>+${totalPoints}</b>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="screenRace()">🎲 다시 환생</button>
+      <button class="btn ghost" onclick="screenStart()">처음으로</button>
+    </div>
+  `;
+  foot.textContent = "기여 포인트는 누적되면 로어포인트로 전환됩니다 (프로토타입: 미저장)";
+}
+
+/* ---------- 초기 ---------- */
+screenStart();
+</script>
+</body>
+</html>
