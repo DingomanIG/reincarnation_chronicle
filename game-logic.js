@@ -220,6 +220,15 @@ const RACES = [
   }
 ];
 
+// 종족 출현 가중치(weight)가 낮을수록 희귀 -> 등급으로 환산
+const GRADE_ORDER = ["전설","고급","레어","일반"]; // 앞쪽일수록 희귀/상위
+function raceGrade(race){
+  if(race.weight <= 3) return "전설";
+  if(race.weight <= 7) return "고급";
+  if(race.weight <= 13) return "레어";
+  return "일반";
+}
+
 function pickWeightedRace(){
   const total = RACES.reduce((s,r)=>s+r.weight,0);
   let roll = Math.random()*total;
@@ -276,11 +285,51 @@ const RANDOM_EVENTS = [
   "폭풍우 치던 밤, 낯선 이를 집에 들였다."
 ];
 
+/* ---------- Supabase 연동 (세계관 아카이브) ---------- */
+const SUPABASE_URL = "https://ngpgcacrwhillsxmsyla.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_6-L9m0HRIsvtVSpjCAHkCA__GIG0DiF";
+
+let supabaseClient = null;
+try{
+  if(window.supabase && typeof window.supabase.createClient === "function"){
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+}catch(e){
+  console.error("[archive] Supabase 클라이언트 초기화 실패", e);
+}
+
+// 새로 태어난 캐릭터를 아카이브 테이블에 저장
+async function archiveCharacter(record){
+  if(!supabaseClient) throw new Error("Supabase 클라이언트를 사용할 수 없습니다.");
+  const { error } = await supabaseClient.from("characters").insert(record);
+  if(error) throw error;
+}
+
+// 세계관 통계용: 전체 캐릭터의 등급/종족/생애 구간만 조회
+async function fetchWorldRecords(){
+  if(!supabaseClient) throw new Error("Supabase 클라이언트를 사용할 수 없습니다.");
+  const { data, error } = await supabaseClient
+    .from("characters")
+    .select("grade, race, birth_year, death_year");
+  if(error) throw error;
+  return data || [];
+}
+
 /* ---------- 상태 ---------- */
 let state = { race:null, stats:null, traits:[], name:null, gender:null };
 
 const card = document.getElementById('card');
 const foot = document.getElementById('foot');
+const stageEl = document.getElementById('stage');
+const layoutEl = document.getElementById('layout');
+const sidePanelsEl = document.getElementById('sidePanels');
+
+// 결과 화면이 아닌 다른 화면으로 이동할 때 세계관 통계 패널을 비운다
+function resetSidePanels(){
+  if(stageEl) stageEl.classList.remove('has-panels');
+  if(layoutEl) layoutEl.classList.remove('split');
+  if(sidePanelsEl) sidePanelsEl.innerHTML = '';
+}
 
 function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
@@ -327,6 +376,7 @@ function progressDots(step,total){
 
 /* ---------- 화면: 0 시작 ---------- */
 function screenStart(){
+  resetSidePanels();
   card.innerHTML = `
     <p class="step-title">주사위를 굴려 새로운 삶을 시작한다.<br>당신이 될 존재는, 굴려보기 전엔 아무도 모른다.</p>
     <div class="choice-grid">
@@ -341,6 +391,7 @@ function screenStart(){
 
 /* ---------- 화면: 1 종족 뽑기 ---------- */
 function screenRace(){
+  resetSidePanels();
   card.innerHTML = progressDots(0,4) + `
     <p class="step-title">주사위가 종족을 정한다.</p>
     <div class="choice-grid">
@@ -509,10 +560,13 @@ function screenResult(){
   const points = generateLifePoints(lines.length);
   const totalPoints = points.reduce((a,b)=>a+b,0);
   const birthYear = 100 + Math.floor(Math.random()*900);
+  const deathYear = birthYear + ages[ages.length-1];
+  const grade = raceGrade(state.race);
 
   card.innerHTML = progressDots(3,4) + `
     <div class="portrait-slot">${state.race.icon}</div>
     <p class="race-name">${state.name}</p>
+    <div class="grade-badge-wrap"><span class="grade-badge">${grade}</span></div>
     <p class="race-tag">${state.gender} · ${state.race.name} · ${state.origin}</p>
     <p style="text-align:center;font-size:11px;color:#7a5f5a;margin:-14px 0 20px;font-style:italic;">${state.race.tag}</p>
     ${renderStatRow(state.stats)}
@@ -529,6 +583,196 @@ function screenResult(){
     </div>
   `;
   foot.textContent = "기여 포인트는 누적되면 로어포인트로 전환됩니다 (프로토타입: 미저장)";
+
+  const record = {
+    name: state.name,
+    gender: state.gender,
+    race: state.race.name,
+    origin: state.origin,
+    grade: grade,
+    visible_stats: state.stats,
+    life_lines: lines,
+    contribution_points: totalPoints,
+    birth_year: birthYear,
+    death_year: deathYear
+  };
+
+  renderSidePanelsLoading();
+  archiveAndLoadWorldStats(record);
+}
+
+/* ---------- 세계관 통계 (타임라인 + 통계 패널) ---------- */
+function renderSidePanelsLoading(){
+  if(stageEl) stageEl.classList.add('has-panels');
+  if(layoutEl) layoutEl.classList.add('split');
+  if(sidePanelsEl){
+    sidePanelsEl.innerHTML = `
+      <div class="side-panel">
+        <p class="loading-text">세계의 기록을 불러오는 중...</p>
+      </div>
+    `;
+  }
+}
+
+function renderSidePanelsError(){
+  if(sidePanelsEl){
+    sidePanelsEl.innerHTML = `
+      <div class="side-panel">
+        <p class="loading-text">세계의 기록을 불러오지 못했습니다.<br>(네트워크 또는 서버 상태를 확인해주세요)</p>
+      </div>
+    `;
+  }
+}
+
+async function archiveAndLoadWorldStats(record){
+  try{
+    await archiveCharacter(record);
+  }catch(e){
+    console.error("[archive] 캐릭터 저장 실패", e);
+  }
+  try{
+    const all = await fetchWorldRecords();
+    renderSidePanels(all, record);
+  }catch(e){
+    console.error("[archive] 세계관 통계 조회 실패", e);
+    renderSidePanelsError();
+  }
+}
+
+// 생애 구간(birth_year~death_year)을 100년 단위 20개 버킷에 밀도로 집계
+const TIMELINE_MAX_YEAR = 2000;
+const TIMELINE_BUCKETS = 20;
+function buildTimelineBuckets(records){
+  const bucketSize = TIMELINE_MAX_YEAR / TIMELINE_BUCKETS;
+  const counts = new Array(TIMELINE_BUCKETS).fill(0);
+  records.forEach(r=>{
+    if(r.birth_year == null || r.death_year == null) return;
+    const start = Math.max(0, Math.min(TIMELINE_MAX_YEAR, r.birth_year));
+    const end = Math.max(0, Math.min(TIMELINE_MAX_YEAR, r.death_year));
+    if(end <= start) return;
+    const startBucket = Math.floor(start / bucketSize);
+    const endBucket = Math.min(TIMELINE_BUCKETS-1, Math.floor((end - 0.001) / bucketSize));
+    for(let b=startBucket; b<=endBucket; b++){
+      counts[b]++;
+    }
+  });
+  return counts;
+}
+
+function renderTimelinePanel(all, record){
+  const counts = buildTimelineBuckets(all);
+  const maxCount = Math.max(1, ...counts);
+
+  const bucketsHtml = counts.map(c=>{
+    const alpha = (0.06 + (c / maxCount) * 0.55).toFixed(3);
+    return `<div class="bucket" style="background:rgba(226,16,10,${alpha})" title="${c}명 생존"></div>`;
+  }).join('');
+
+  const myTopPct = (Math.max(0, Math.min(TIMELINE_MAX_YEAR, record.birth_year)) / TIMELINE_MAX_YEAR) * 100;
+  const myEndPct = (Math.max(0, Math.min(TIMELINE_MAX_YEAR, record.death_year)) / TIMELINE_MAX_YEAR) * 100;
+  const myHeightPct = Math.max(0.6, myEndPct - myTopPct);
+
+  return `
+    <div class="side-panel timeline-panel">
+      <h3 class="panel-title">세계 연대기</h3>
+      <div class="timeline-row">
+        <div class="timeline-axis">
+          <span style="top:0%">0</span>
+          <span style="top:25%">500</span>
+          <span style="top:50%">1000</span>
+          <span style="top:75%">1500</span>
+          <span style="top:100%">2000</span>
+        </div>
+        <div class="timeline-track">
+          ${bucketsHtml}
+          <div class="timeline-marker" style="top:${myTopPct}%;height:${myHeightPct}%" title="${record.name} (${record.birth_year}~${record.death_year})"></div>
+        </div>
+      </div>
+      <p class="panel-caption">세상에 새겨진 모든 생애의 밀도(음영) 위에,<br>당신의 생애(금빛 강조)가 새겨졌다.</p>
+    </div>
+  `;
+}
+
+function renderStatsPanel(all, record){
+  const total = all.length || 0;
+  const safeTotal = total || 1;
+
+  const gradeCounts = {};
+  GRADE_ORDER.forEach(g => gradeCounts[g] = 0);
+  all.forEach(r=>{
+    if(gradeCounts[r.grade] === undefined) gradeCounts[r.grade] = 0;
+    gradeCounts[r.grade]++;
+  });
+  const gradeRows = GRADE_ORDER.map(g=>{
+    const pct = (gradeCounts[g] || 0) / safeTotal * 100;
+    return `
+      <div class="dist-row">
+        <span class="dist-label">${g}</span>
+        <div class="dist-bar"><div class="dist-fill" style="width:${pct}%"></div></div>
+        <span class="dist-pct">${pct.toFixed(1)}%</span>
+      </div>
+    `;
+  }).join('');
+
+  const raceCounts = {};
+  all.forEach(r=>{
+    const key = r.race || "알 수 없음";
+    raceCounts[key] = (raceCounts[key] || 0) + 1;
+  });
+  const raceSorted = Object.entries(raceCounts).sort((a,b)=>b[1]-a[1]);
+  const TOP_RACE_N = 5;
+  const topRaces = raceSorted.slice(0, TOP_RACE_N);
+  const restCount = raceSorted.slice(TOP_RACE_N).reduce((s,[,c])=>s+c, 0);
+  let raceRows = topRaces.map(([name,c])=>{
+    const pct = c / safeTotal * 100;
+    return `
+      <div class="dist-row">
+        <span class="dist-label">${name}</span>
+        <div class="dist-bar"><div class="dist-fill race" style="width:${pct}%"></div></div>
+        <span class="dist-pct">${pct.toFixed(1)}%</span>
+      </div>
+    `;
+  }).join('');
+  if(restCount > 0){
+    const pct = restCount / safeTotal * 100;
+    raceRows += `
+      <div class="dist-row">
+        <span class="dist-label">기타</span>
+        <div class="dist-bar"><div class="dist-fill race" style="width:${pct}%"></div></div>
+        <span class="dist-pct">${pct.toFixed(1)}%</span>
+      </div>
+    `;
+  }
+
+  // 등급별 누적 비율로 내 등급의 상위 % 계산 (전설이 가장 희귀 -> 상위)
+  const myRank = GRADE_ORDER.indexOf(record.grade);
+  const cumulativeCount = GRADE_ORDER.slice(0, myRank + 1).reduce((s,g)=> s + (gradeCounts[g] || 0), 0);
+  const topPercent = cumulativeCount / safeTotal * 100;
+  const topPercentLabel = topPercent < 1 ? topPercent.toFixed(2) : topPercent.toFixed(1);
+
+  return `
+    <div class="side-panel stats-panel">
+      <h3 class="panel-title">세계관 통계</h3>
+      <div class="stat-block">
+        <span class="stat-block-label">지금까지 태어난 생명</span>
+        <b class="stat-block-value">${total.toLocaleString()}<small>명</small></b>
+      </div>
+      <div class="dist-group">
+        <p class="dist-title">등급 분포</p>
+        ${gradeRows}
+      </div>
+      <div class="dist-group">
+        <p class="dist-title">종족별 비율</p>
+        ${raceRows}
+      </div>
+      <div class="my-rank">당신의 <b>${record.grade}</b> 등급은 전체 중 <b>상위 ${topPercentLabel}%</b></div>
+    </div>
+  `;
+}
+
+function renderSidePanels(all, record){
+  if(!sidePanelsEl) return;
+  sidePanelsEl.innerHTML = renderTimelinePanel(all, record) + renderStatsPanel(all, record);
 }
 
 /* ---------- 초기 ---------- */

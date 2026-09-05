@@ -248,3 +248,190 @@
     margin-top:22px;
     letter-spacing:0.05em;
   }
+
+  /* ---- 등급 배지 ---- */
+  .grade-badge{
+    display:inline-block;
+    font-size:10.5px;
+    letter-spacing:0.08em;
+    padding:3px 10px;
+    border:1px solid var(--gold-dim);
+    color:var(--gold);
+    background:rgba(201,162,75,0.08);
+    margin:0 auto 14px;
+  }
+  .grade-badge-wrap{ text-align:center; margin-top:-8px; }
+
+  /* ---- 결과 화면 레이아웃 (카드 + 세계관 통계) ---- */
+  .stage{ transition: max-width 0.2s ease; }
+  .stage.has-panels{ max-width:980px; }
+  .layout{ display:block; }
+  .layout.split{
+    display:grid;
+    grid-template-columns: minmax(0,520px) minmax(260px,1fr);
+    gap:24px;
+    align-items:start;
+  }
+  @media (max-width:860px){
+    .layout.split{ grid-template-columns:1fr; }
+  }
+  .side-panels{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  .side-panels:empty{ display:none; }
+  .side-panel{
+    background:var(--void2);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:20px;
+    position:relative;
+  }
+  .side-panel::before{
+    content:"";
+    position:absolute;
+    inset:5px;
+    border:1px solid rgba(201,162,75,0.12);
+    pointer-events:none;
+  }
+  .panel-title{
+    font-size:14px;
+    color:var(--gold);
+    margin:0 0 14px;
+    font-family:'Anton','Noto Sans KR',sans-serif;
+    font-weight:400;
+    letter-spacing:0.03em;
+    text-align:center;
+  }
+  .panel-caption{
+    font-size:11px;
+    color:#7a5f5a;
+    text-align:center;
+    margin:12px 0 0;
+    line-height:1.5;
+    font-style:italic;
+  }
+  .loading-text{
+    text-align:center;
+    font-size:12.5px;
+    color:#a8908a;
+    padding:20px 4px;
+    line-height:1.6;
+  }
+
+  /* ---- 세로 타임라인 ---- */
+  .timeline-row{
+    display:flex;
+    gap:10px;
+    height:340px;
+  }
+  .timeline-axis{
+    position:relative;
+    width:34px;
+    flex-shrink:0;
+  }
+  .timeline-axis span{
+    position:absolute;
+    right:0;
+    transform:translateY(-50%);
+    font-size:10px;
+    color:#7a5f5a;
+    white-space:nowrap;
+  }
+  .timeline-track{
+    position:relative;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    border:1px solid var(--line);
+    overflow:hidden;
+  }
+  .bucket{
+    flex:1;
+    border-bottom:1px solid rgba(0,0,0,0.25);
+  }
+  .bucket:last-child{ border-bottom:none; }
+  .timeline-marker{
+    position:absolute;
+    left:0;right:0;
+    background:rgba(226,16,10,0.35);
+    border-top:2px solid var(--gold);
+    border-bottom:2px solid var(--gold);
+    box-shadow:0 0 10px rgba(226,16,10,0.55);
+    pointer-events:none;
+  }
+
+  /* ---- 통계 패널 ---- */
+  .stat-block{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:12px 14px;
+    margin-bottom:16px;
+    border:1px solid var(--gold-dim);
+    background:rgba(201,162,75,0.06);
+  }
+  .stat-block-label{ font-size:12.5px; color:#b09892; }
+  .stat-block-value{
+    font-size:20px;
+    color:var(--gold);
+    font-weight:400;
+    font-family:'Anton','Noto Sans KR',sans-serif;
+  }
+  .stat-block-value small{
+    font-size:11px;
+    color:#a8908a;
+    margin-left:3px;
+    font-family:'Inter','Noto Sans KR',sans-serif;
+  }
+  .dist-group{ margin-bottom:16px; }
+  .dist-group:last-of-type{ margin-bottom:16px; }
+  .dist-title{
+    font-size:11.5px;
+    color:#a8908a;
+    margin:0 0 8px;
+    letter-spacing:0.03em;
+  }
+  .dist-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:11.5px;
+    color:#b09892;
+    margin-bottom:6px;
+  }
+  .dist-label{
+    width:52px;
+    flex-shrink:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .dist-bar{
+    flex:1;
+    height:8px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid var(--line);
+    overflow:hidden;
+  }
+  .dist-fill{
+    height:100%;
+    background:var(--gold-dim);
+  }
+  .dist-fill.race{ background:#8a6a63; }
+  .dist-pct{
+    width:44px;
+    text-align:right;
+    flex-shrink:0;
+    color:#a8908a;
+  }
+  .my-rank{
+    text-align:center;
+    font-size:13px;
+    color:var(--ink);
+    padding:14px;
+    border:1px solid var(--gold-dim);
+    background:rgba(201,162,75,0.08);
+  }
+  .my-rank b{ color:var(--gold); }
