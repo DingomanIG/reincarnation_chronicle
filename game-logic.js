@@ -43,7 +43,7 @@ function extractSurname(fullName){
 const RACES = [
   {
     key:"human", name:"인간", tag:"짧고 뜨겁게 타오르는 자들",
-    icon:"◆", weight:18, lifespan:{avg:50, variance:20}, comingOfAge:[14,18], middleCount:3, childrenRange:[0,4],
+    icon:"◆", themeColor:"#6b7280", weight:18, lifespan:{avg:50, variance:20}, comingOfAge:[14,18], middleCount:3, childrenRange:[0,4],
     origins:["아렌 왕국","남부 자유도시 연합","변경 개척지","동부 교역국"],
     birthPlaces:["변방의 흙벽 마을","성벽 아래 빈민가","강가의 방앗간 마을","국경 근처 주둔지"],
     birthParents:["대장장이 아버지와 산파 어머니","이름 없는 용병","떠돌이 상인 부부","전쟁으로 남편을 잃은 홀어미"],
@@ -58,7 +58,7 @@ const RACES = [
   },
   {
     key:"elf", name:"엘프", tag:"숲의 시간으로 세상을 보는 자들",
-    icon:"❖", weight:2, lifespan:{avg:800, variance:200}, comingOfAge:[25,40], middleCount:6, childrenRange:[0,2],
+    icon:"❖", themeColor:"#2f9e6e", weight:2, lifespan:{avg:800, variance:200}, comingOfAge:[25,40], middleCount:6, childrenRange:[0,2],
     origins:["은빛숲 일족","별지기 혈통","고목의 회랑"],
     birthPlaces:["천 년 된 숲 가장 깊은 나무 아래","달빛만 닿는 은빛 골짜기","인간의 발길이 닿지 않는 고목 마을"],
     birthParents:["숲의 수호자 일족","마지막 남은 별지기 혈통","오래전 잊힌 왕가의 후예"],
@@ -73,7 +73,7 @@ const RACES = [
   },
   {
     key:"dwarf", name:"드워프", tag:"돌과 불 속에서 정직한 자들",
-    icon:"⛏", weight:12, lifespan:{avg:200, variance:40}, comingOfAge:[20,30], middleCount:5, childrenRange:[0,3],
+    icon:"⛏", themeColor:"#b5651d", weight:12, lifespan:{avg:200, variance:40}, comingOfAge:[20,30], middleCount:5, childrenRange:[0,3],
     origins:["강철턱 씨족","깊은뿌리 산맥국","불꽃수염 동맹"],
     birthPlaces:["산맥 깊은 광산 마을","불꽃 대장간 골목","백 대에 걸친 굴착지"],
     birthParents:["대장장이 가문","광산 감독관 부부","이름난 세공사"],
@@ -88,7 +88,7 @@ const RACES = [
   },
   {
     key:"orc", name:"오크", tag:"부족의 명예로 사는 자들",
-    icon:"⚔", weight:22, lifespan:{avg:40, variance:15}, comingOfAge:[12,16], middleCount:2, childrenRange:[0,5],
+    icon:"⚔", themeColor:"#5a6b2e", weight:22, lifespan:{avg:40, variance:15}, comingOfAge:[12,16], middleCount:2, childrenRange:[0,5],
     origins:["붉은협곡 부족","폭풍주먹 부족","검은상처 연맹"],
     birthPlaces:["황무지 전사 부족의 천막","부서진 옛 전장 근처 야영지","붉은 협곡 부족 마을"],
     birthParents:["부족장의 셋째 아이로","이름 없는 전사의 사생아로","전쟁에서 죽은 족장의 유복자로"],
@@ -103,7 +103,7 @@ const RACES = [
   },
   {
     key:"goblin", name:"고블린", tag:"수적으로 살아남는 자들",
-    icon:"◈", weight:24, lifespan:{avg:25, variance:10}, comingOfAge:[5,8], middleCount:1, childrenRange:[0,8],
+    icon:"◈", themeColor:"#8bc53f", weight:24, lifespan:{avg:25, variance:10}, comingOfAge:[5,8], middleCount:1, childrenRange:[0,8],
     origins:["쓰레기산 무리","하수도 소굴","폐광 굴 집단"],
     birthPlaces:["버려진 하수도 굴","쓰레기산 아래 은신처","폐광 깊숙한 굴 소굴"],
     birthParents:["누구인지도 모를 부모 밑에서","수십 형제자매 틈에서","고아로 무리에게 주워져"],
@@ -118,7 +118,7 @@ const RACES = [
   },
   {
     key:"beastkin", name:"수인", tag:"본능과 이성 사이를 걷는 자들",
-    icon:"✦", weight:13, lifespan:{avg:60, variance:20}, comingOfAge:[10,14], middleCount:3, childrenRange:[0,4],
+    icon:"✦", themeColor:"#b8860b", weight:13, lifespan:{avg:60, variance:20}, comingOfAge:[10,14], middleCount:3, childrenRange:[0,4],
     origins:["달빛 무리","경계땅 유랑단","초원 사냥터 부족"],
     birthPlaces:["달빛 아래 늑대 무리의 굴","인간 마을과 숲의 경계","이름 없는 초원의 무리터"],
     birthParents:["무리의 우두머리 밑에서","인간에게 거두어져","떠돌이 무리의 막내로"],
@@ -133,7 +133,7 @@ const RACES = [
   },
   {
     key:"ratkin", name:"쥐인간", tag:"틈새에서 번성하는 자들",
-    icon:"⁘", weight:20, lifespan:{avg:20, variance:8}, comingOfAge:[4,6], middleCount:1, childrenRange:[0,10],
+    icon:"⁘", themeColor:"#5c5347", weight:20, lifespan:{avg:20, variance:8}, comingOfAge:[4,6], middleCount:1, childrenRange:[0,10],
     origins:["하수구 무리","곡물창고 소굴","도시 지하 굴"],
     birthPlaces:["곡물창고 지하","하수도 미로","버려진 마차 밑"],
     birthParents:["쥐 떼 속에서 정체 모를 부모 밑에","굶주린 어미 밑에서","무리에게 거두어져"],
@@ -148,7 +148,7 @@ const RACES = [
   },
   {
     key:"halfdemon", name:"하프데몬", tag:"경계에 선 자들",
-    icon:"❂", weight:3, lifespan:{avg:150, variance:50}, comingOfAge:[15,22], middleCount:4, childrenRange:[0,1],
+    icon:"❂", themeColor:"#6b1e3c", weight:3, lifespan:{avg:150, variance:50}, comingOfAge:[15,22], middleCount:4, childrenRange:[0,1],
     origins:["이름 없는 계약자","추방된 혈통","그림자 시장의 그늘"],
     birthPlaces:["인간과 마족이 스쳐간 뒷골목","봉인된 제단 근처","국경 밖 그림자 마을"],
     birthParents:["이름을 밝히지 않은 마족 아버지에게","인간 어머니와 정체불명의 존재 사이에서","계약의 대가로"],
@@ -163,7 +163,7 @@ const RACES = [
   },
   {
     key:"kobold", name:"코볼트", tag:"함정과 굴을 사랑하는 자들",
-    icon:"▲", weight:16, lifespan:{avg:30, variance:10}, comingOfAge:[5,8], middleCount:2, childrenRange:[0,6],
+    icon:"▲", themeColor:"#a15c2e", weight:16, lifespan:{avg:30, variance:10}, comingOfAge:[5,8], middleCount:2, childrenRange:[0,6],
     origins:["붉은굴 부족","광맥 아래 둥지","버려진 던전 개척지"],
     birthPlaces:["좁은 굴 둥지 속","버려진 광산 통로","돌무더기 밑 은신처"],
     birthParents:["둥지를 지키는 어미 밑에서","알 무더기 속 여럿과 함께","부족 전체가 함께 돌보아"],
@@ -178,7 +178,7 @@ const RACES = [
   },
   {
     key:"firbolg", name:"펄보그", tag:"숲과 침묵을 지키는 거인족",
-    icon:"☘", weight:6, lifespan:{avg:90, variance:20}, comingOfAge:[18,25], middleCount:4, childrenRange:[0,2],
+    icon:"☘", themeColor:"#2e5339", weight:6, lifespan:{avg:90, variance:20}, comingOfAge:[18,25], middleCount:4, childrenRange:[0,2],
     origins:["안개숲 수호단","고요한 골짜기 씨족","오래된 나무 아래 은둔지"],
     birthPlaces:["안개 자욱한 숲 깊은 곳","오래된 신단 옆 오두막","이끼 낀 거석 아래"],
     birthParents:["숲을 지키는 부모 밑에서","조용한 은둔자 가문에서","나무의 축복을 받은 부모에게"],
@@ -193,7 +193,7 @@ const RACES = [
   },
   {
     key:"gnome", name:"노움", tag:"호기심으로 세상을 뜯어보는 자들",
-    icon:"⚙", weight:7, lifespan:{avg:300, variance:60}, comingOfAge:[25,45], middleCount:5, childrenRange:[0,3],
+    icon:"⚙", themeColor:"#c97b4a", weight:7, lifespan:{avg:300, variance:60}, comingOfAge:[25,45], middleCount:5, childrenRange:[0,3],
     origins:["톱니바퀴 공방 마을","지하 발명가 조합","이끼정원 은신처"],
     birthPlaces:["발명품 가득한 작업실","지하 공방 마을","버섯 정원 옆 오두막"],
     birthParents:["발명가 부모 밑에서","조합 소속 장인 가문에서","호기심 많은 학자 부모에게"],
@@ -208,7 +208,7 @@ const RACES = [
   },
   {
     key:"arachne", name:"아라크네", tag:"실을 짜 세상을 엮는 자들",
-    icon:"❋", weight:3, lifespan:{avg:80, variance:25}, comingOfAge:[4,7], middleCount:3, childrenRange:[0,20],
+    icon:"❋", themeColor:"#3a2547", weight:3, lifespan:{avg:80, variance:25}, comingOfAge:[4,7], middleCount:3, childrenRange:[0,20],
     origins:["거미줄 회랑","숨겨진 협곡 둥지","버려진 탑의 그늘"],
     birthPlaces:["거미줄 뒤덮인 탑 꼭대기","협곡 깊은 둥지","오래된 신전의 그늘"],
     birthParents:["알집에서 수십 형제와 함께","고독한 어미의 마지막 알에서","이름 모를 자매들 틈에서"],
@@ -223,7 +223,7 @@ const RACES = [
   },
   {
     key:"halfelf", name:"하프엘프", tag:"두 세계 사이에서 태어난 자들",
-    icon:"◇", weight:5, lifespan:{avg:150, variance:40}, comingOfAge:[16,20], middleCount:4, childrenRange:[0,3],
+    icon:"◇", themeColor:"#7fa88f", weight:5, lifespan:{avg:150, variance:40}, comingOfAge:[16,20], middleCount:4, childrenRange:[0,3],
     origins:["국경 마을 혼혈 공동체","인간 왕국 변방 가문","숲과 도시 사이 정착지"],
     birthPlaces:["인간과 엘프가 함께 사는 변경 마을","숲과 도시 경계의 여관","혼혈을 받아준 작은 공동체"],
     birthParents:["인간 아버지와 엘프 어머니 사이에서","엘프 아버지와 인간 어머니 사이에서","서로 다른 두 세계의 부모 밑에서"],
@@ -676,7 +676,9 @@ function screenResult(){
   state.questionQueue = null;
 
   setCardHTML(progressDots(3,4) + `
-    <div class="portrait-slot">${state.race.icon}</div>
+    <div class="portrait-slot" style="background:${state.race.themeColor}">
+      <img src="assets/races/${state.race.key}.png" alt="${state.race.name}" class="portrait-img">
+    </div>
     <p class="race-name">${state.name}</p>
     <div class="grade-badge-wrap"><span class="grade-badge">${grade}</span></div>
     <p class="race-tag">${state.gender} · ${state.race.name} · ${state.origin}</p>
