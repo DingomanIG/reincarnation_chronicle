@@ -253,6 +253,47 @@ const GRADE_CARD_COUNTS = { "일반":1, "레어":2, "고급":3, "전설":4 };
 // 등급별 종족뱃지(portrait-slot) 테두리 색 (흔한 RPG 희귀도 배색: 회색<파랑<보라<금색)
 const GRADE_BORDER_COLORS = { "일반":"#9c9c9c", "레어":"#2f7dd6", "고급":"#8a4fc9", "전설":"#d4a017" };
 
+// 신 코멘트 UX용 표시 정보 (Notion "신들" 페이지의 영역을 그대로 옮김).
+// 오블리비아는 성향질문 카테고리 외에, 시작/종족굴리기/스탯 화면의 전반적 내레이터로도 쓰인다.
+const GOD_INFO = {
+  "네크로시스": { domain:"역병과 부패의 신", glyph:"☣", endLine:"썩어가는 것들 속에서도 뭔가 남았군. 다음 생은 무엇이 부패하고 무엇이 살아남을까?" },
+  "모르가나":   { domain:"죽음과 심판의 여신", glyph:"⚖", endLine:"생의 저울은 이제 멈췄다. 죄와 공은 셈해졌으니, 다음 생을 심판하지." },
+  "골드하임":   { domain:"황금과 탐욕의 신", glyph:"⛁", endLine:"쌓은 것이 제법이군. 다음 생엔 얼마나 더 채울 수 있을까?" },
+  "테탈로스":   { domain:"바다와 폭풍의 신", glyph:"≈", endLine:"파란만장한 항해였다. 다음 생은 또 어떤 파도를 탈까?" },
+  "하이란":     { domain:"가정과 인연의 여신", glyph:"❤", endLine:"정 많은 생이었어. 다음엔 누구와 인연이 닿을까?" },
+  "그라쉬":     { domain:"폭력과 악행의 신", glyph:"☠", endLine:"피와 소란으로 얼룩진 생이었군. 다음엔 얼마나 더 거칠어질까?" },
+  "바르돈":     { domain:"전투와 무공의 신", glyph:"⚔", endLine:"용맹한 생이었다! 다음 생도 이만큼 뜨거울까?" },
+  "셀루나":     { domain:"지혜와 기술의 여신", glyph:"☾", endLine:"배움이 있는 삶이었군. 다음 생에는 무엇을 깨우칠까?" },
+  "오블리비아": { domain:"신비와 운명의 신", glyph:"◈", endLine:"제법 흥미로운 생이었어. 다음 생은 또 어떤 얼굴을 하고 있을까?" }
+};
+
+// 화면 상단의 신 코멘트를 한 글자씩 타이핑하듯 채운다 (60ms/글자)
+let _typeTimer = null;
+function typeInto(elId, text, speed){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  clearInterval(_typeTimer);
+  el.textContent = '';
+  if(!text) return;
+  let i = 0;
+  _typeTimer = setInterval(()=>{
+    i++;
+    el.textContent = text.slice(0, i);
+    if(i >= text.length) clearInterval(_typeTimer);
+  }, speed || 60);
+}
+function godSpeechHTML(name, info, elId){
+  return `
+    <div class="god-row">
+      <div class="god-avatar">${info.glyph}</div>
+      <div class="god-speech">
+        <div class="god-name">${name} · ${info.domain}</div>
+        <p class="god-speech-text" id="${elId}"></p>
+      </div>
+    </div>
+  `;
+}
+
 // ACHIEVEMENT_CARDS(achievement-cards.js, 노션 동기화 결과)에서 count장을 중복 없이 랜덤으로 뽑는다
 function rollAchievementCards(count){
   const pool = [...ACHIEVEMENT_CARDS];
@@ -383,12 +424,12 @@ function resetSidePanels(){
   if(sidePanelsEl) sidePanelsEl.innerHTML = '';
 }
 
-// 화면 전환 시 카드 내용을 위에서 아래로 슬라이드 다운시키며 교체한다
+// 화면 전환 시 카드 내용을 오른쪽에서 슬라이드 인시키며 교체한다
 function setCardHTML(html){
   card.innerHTML = html;
-  card.classList.remove('slide-down');
+  card.classList.remove('slide-in');
   void card.offsetWidth; // 강제 리플로우: 애니메이션 재시작
-  card.classList.add('slide-down');
+  card.classList.add('slide-in');
 }
 
 function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
@@ -454,7 +495,7 @@ function progressDots(step,total){
 function screenStart(){
   resetSidePanels();
   setCardHTML(`
-    <p class="step-title">주사위를 굴려 새로운 삶을 시작한다.<br>당신이 될 존재는, 굴려보기 전엔 아무도 모른다.</p>
+    ${godSpeechHTML("오블리비아", GOD_INFO["오블리비아"], "godSpeechText")}
     <div class="choice-grid">
       <button class="choice" onclick="screenRace()">
         <span class="name">🎲 환생하기</span>
@@ -463,32 +504,60 @@ function screenStart(){
     </div>
   `);
   foot.textContent = "";
+  typeInto("godSpeechText", "어이, 거기 자네. 운명의 주사위가 근질거리는군. 어떤 생이 걸릴지는 나도 몰라. 궁금하지 않나?");
 }
 
-/* ---------- 화면: 1 종족 뽑기 ---------- */
+/* ---------- 화면: 1 종족 뽑기 (주사위를 직접 눌러 굴린다) ---------- */
 function screenRace(){
   resetSidePanels();
-  setCardHTML(progressDots(0,4) + `
-    <p class="step-title">주사위가 종족을 정한다.</p>
-    <div class="choice-grid">
-      <button class="choice" onclick="rollRace()">
-        <span class="name">🎲 종족 굴리기</span>
-        <span class="desc">인간부터 아라크네까지, 13종족 중 하나</span>
-      </button>
-    </div>
-  `);
-}
-function rollRace(){
   // 완전히 새로운 환생이므로, 혹시 남아있을 자식 이어가기 상태는 초기화한다
   state.inheritedBirthYear = null;
   state.isChildContinuation = false;
   state.parentId = null; // 새 가문의 1세대 (조상 없음)
-  state.race = pickWeightedRace();
-  state.grade = raceGrade(state.race);
-  state.name = genName(state.race.key);
-  state.gender = rand(GENDERS);
-  state.origin = rand(state.race.origins);
-  screenStats();
+  setCardHTML(progressDots(0,4) + `
+    ${godSpeechHTML("오블리비아", GOD_INFO["오블리비아"], "godSpeechText")}
+    <div class="dice-wrap" id="diceWrap" onclick="rollRaceDice()">
+      <span class="dice-emoji">🎲</span>
+    </div>
+    <p class="dice-hint" id="diceHint">주사위를 톡 건드려보게</p>
+    <div id="raceRevealArea"></div>
+  `);
+  typeInto("godSpeechText", "종족의 주사위가 근질거리는군. 톡 건드려보게.");
+}
+
+let _diceRolling = false;
+function rollRaceDice(){
+  if(_diceRolling) return;
+  _diceRolling = true;
+  const diceWrap = document.getElementById('diceWrap');
+  const hint = document.getElementById('diceHint');
+  if(diceWrap) diceWrap.classList.add('dice-spin');
+  if(hint) hint.style.display = 'none';
+  setTimeout(()=>{
+    _diceRolling = false;
+    if(diceWrap) diceWrap.classList.remove('dice-spin');
+    state.race = pickWeightedRace();
+    state.grade = raceGrade(state.race);
+    state.name = genName(state.race.key);
+    state.gender = rand(GENDERS);
+    state.origin = rand(state.race.origins);
+    const area = document.getElementById('raceRevealArea');
+    if(area){
+      area.innerHTML = `
+        <div class="race-reveal">
+          <span class="tag-grade">${state.grade} 등급</span>
+          <h2 class="reveal-race-name">${state.race.name}</h2>
+          <p class="reveal-race-tag">${state.race.tag}</p>
+        </div>
+        <div class="choice-grid">
+          <button class="choice" onclick="screenStats()">
+            <span class="name">다음 →</span>
+          </button>
+        </div>
+      `;
+    }
+    typeInto('godSpeechText', `이번엔 이런 존재로군. ${state.race.name}이라...`);
+  }, 700);
 }
 
 // 직전 생에서 자식을 두었을 때, 그 자식으로 이어서 플레이한다.
@@ -516,6 +585,7 @@ function screenStats(){
   state.stats = rollStats();
   const nextDesc = state.isChildContinuation ? "성향 질문은 건너뛰고 바로 삶을 살아본다" : "이 삶의 성향을 정한다";
   setCardHTML(progressDots(1,4) + `
+    ${godSpeechHTML("오블리비아", GOD_INFO["오블리비아"], "godSpeechText")}
     <p class="step-title">${state.race.icon} <b style="color:var(--gold)">${state.name}</b><br><span style="font-size:13px;color:var(--ink-soft)">${state.gender} · ${state.race.name}(으)로 태어났다</span></p>
     ${renderStatRow(state.stats)}
     <div class="choice-grid">
@@ -525,6 +595,13 @@ function screenStats(){
       </button>
     </div>
   `);
+  const strongestStat = Object.entries(state.stats).sort((a,b)=>b[1]-a[1])[0][0];
+  const statComments = {
+    힘:   `근육이 제법이군. ${state.race.name}치고 힘이 넘쳐.`,
+    지혜: `눈빛에 총기가 도는군. 지혜로운 삶이 되겠어.`,
+    매력: `타고난 매력이 느껴지는걸? 사람들이 좋아하겠어.`
+  };
+  typeInto("godSpeechText", statComments[strongestStat]);
 }
 
 // 등급이 정해졌으니(state.grade), 그 등급만큼 업적카드를 먼저 뽑고, 뽑힌 카드들의
@@ -536,9 +613,10 @@ function beginQuestions(){
 
   // 카드마다 그 카테고리(신)의 질문 풀에서 하나씩 랜덤으로 고른다.
   // 같은 신이 카드에 두 번 나오면 그 신 질문도 그대로 두 번 묻는다 (중복 방지 없음).
+  // god 필드를 함께 담아, 질문 화면/결과 화면에서 어느 신이 말하는지 표시할 수 있게 한다.
   state.questionQueue = state.drawnCards.map(c=>{
     const pool = (typeof PERSONALITY_QUESTIONS !== "undefined" && PERSONALITY_QUESTIONS[c.category]) || [];
-    return pool.length ? rand(pool) : null; // 그 신의 질문이 아직 없으면 이 카드 자리는 질문 없이 스킵
+    return pool.length ? { god: c.category, ...rand(pool) } : null; // 그 신의 질문이 아직 없으면 이 카드 자리는 질문 없이 스킵
   }).filter(q=>q);
 
   if(state.isChildContinuation){
@@ -552,8 +630,9 @@ function beginQuestions(){
 function screenGodQuestion(i){
   if(!state.questionQueue || i >= state.questionQueue.length){ screenResult(); return; }
   const q = state.questionQueue[i];
+  const info = GOD_INFO[q.god] || GOD_INFO["오블리비아"];
   setCardHTML(progressDots(2,4) + `
-    <p class="step-title">${q.q}</p>
+    ${godSpeechHTML(q.god, info, "godSpeechText")}
     <div class="choice-grid">
       ${q.opts.map((label,idx)=>`
         <button class="choice" onclick="answerGodQuestion(${i},${idx})">
@@ -562,6 +641,7 @@ function screenGodQuestion(i){
       `).join('')}
     </div>
   `);
+  typeInto("godSpeechText", q.q);
 }
 function answerGodQuestion(qi, oi){
   // 선택한 답은 지금 당장은 생애 텍스트에 반영되지 않지만(추후 확장 대비) 기록은 해둔다.
@@ -659,6 +739,13 @@ function generateAges(count, race){
 }
 
 function screenResult(){
+  // 결과 화면에서 마무리 대사를 할 신: 이번 생에서 마지막으로 물었던 질문의 신(등급 카드가 없거나
+  // 자식으로 이어가기라 질문 자체가 없었으면 오블리비아가 대신 마무리한다)
+  const closingGodName = (state.questionQueue && state.questionQueue.length)
+    ? state.questionQueue[state.questionQueue.length - 1].god
+    : "오블리비아";
+  const closingGod = GOD_INFO[closingGodName] || GOD_INFO["오블리비아"];
+
   const { lines, hasChildren } = generateLifeLines(); // lines: [{text, point}, ...]
   const ages = generateAges(lines.length, state.race);
   const points = generateLifePoints(lines);
@@ -710,6 +797,7 @@ function screenResult(){
       <span>이번 생의 업적 포인트</span>
       <b>+${totalPoints}</b>
     </div>
+    ${godSpeechHTML(closingGodName, closingGod, "godSpeechText")}
     <div class="actions">
       <button class="btn" onclick="screenRace()">🎲 다시 환생</button>
       ${hasChildren ? `<button class="btn" onclick="continueAsChild()">👶 자식으로 이어가기</button>` : ''}
@@ -717,6 +805,7 @@ function screenResult(){
     </div>
   `);
   foot.textContent = "업적 포인트는 누적되면 로어포인트로 전환됩니다 (프로토타입: 미저장)";
+  typeInto("godSpeechText", closingGod.endLine);
 
   const record = {
     name: state.name,

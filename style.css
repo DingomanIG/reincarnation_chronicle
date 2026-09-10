@@ -62,16 +62,121 @@
     border:1px solid rgba(122,36,24,0.15);
     pointer-events:none;
   }
-  /* 화면(스텝) 전환 시 새 내용이 위에서 아래로 슬라이드 다운되며 나타남 */
-  @keyframes cardSlideDown{
-    from{ opacity:0; transform:translateY(-22px); }
-    to{ opacity:1; transform:translateY(0); }
+  /* 화면(스텝) 전환 시 새 내용이 오른쪽에서 슬라이드 인되며 나타남 (다음 화면으로 넘어가는 느낌) */
+  @keyframes cardSlideIn{
+    from{ opacity:0; transform:translateX(26px); }
+    to{ opacity:1; transform:translateX(0); }
   }
-  .card.slide-down{
-    animation: cardSlideDown 0.38s cubic-bezier(0.22,0.61,0.36,1);
+  .card.slide-in{
+    animation: cardSlideIn 0.38s cubic-bezier(0.22,0.61,0.36,1);
   }
   @media (prefers-reduced-motion: reduce){
-    .card.slide-down{ animation:none; }
+    .card.slide-in{ animation:none; }
+  }
+
+  /* ---- 신 코멘트 (아바타 + 말풍선, 대사는 타이핑 효과로 채워짐) ---- */
+  .god-row{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    margin-bottom:18px;
+  }
+  .god-avatar{
+    width:42px;height:42px;
+    border-radius:50%;
+    flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;
+    color:#fff;
+    background:radial-gradient(circle at 32% 28%, var(--gold-dim), var(--gold));
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+  }
+  .god-speech{
+    flex:1;
+    background:var(--void2);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:9px 13px;
+  }
+  .god-name{
+    font-family:'Rye','Noto Serif KR',serif;
+    font-size:11.5px;
+    color:var(--gold);
+    margin-bottom:3px;
+    letter-spacing:0.02em;
+  }
+  .god-speech-text{
+    font-size:13px;
+    line-height:1.55;
+    margin:0;
+    color:var(--ink);
+    min-height:1.4em;
+  }
+
+  /* ---- 주사위 인터랙션 (종족 굴리기) ---- */
+  .dice-wrap{
+    width:120px;height:120px;
+    margin:6px auto 16px;
+    border-radius:24px;
+    background:var(--void2);
+    border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    box-shadow:0 6px 18px rgba(0,0,0,0.12);
+    transition:border-color 0.15s ease;
+  }
+  .dice-wrap:hover{ border-color:var(--gold); }
+  .dice-emoji{ font-size:48px; }
+  @keyframes diceSpin{
+    0%{ transform:rotate(0deg) scale(1); }
+    50%{ transform:rotate(300deg) scale(1.12); }
+    100%{ transform:rotate(720deg) scale(1); }
+  }
+  .dice-wrap.dice-spin{
+    animation:diceSpin 0.7s cubic-bezier(0.36,0.07,0.19,0.97);
+    cursor:default;
+  }
+  .dice-hint{
+    text-align:center;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:0 0 4px;
+  }
+  @keyframes raceRevealIn{
+    from{ opacity:0; transform:translateY(8px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .race-reveal{
+    text-align:center;
+    margin-bottom:16px;
+    animation: raceRevealIn 0.35s ease both;
+  }
+  .race-reveal .tag-grade{
+    display:inline-block;
+    font-size:10.5px;
+    letter-spacing:0.08em;
+    padding:3px 10px;
+    border:1px solid var(--gold-dim);
+    color:var(--gold);
+    background:rgba(122,36,24,0.08);
+    margin-bottom:8px;
+  }
+  .reveal-race-name{
+    font-size:26px;
+    margin:0 0 6px;
+    font-family:'Rye','Noto Serif KR',serif;
+    font-weight:400;
+    color:var(--ink);
+  }
+  .reveal-race-tag{
+    font-size:12px;
+    color:var(--ink-soft);
+    margin:0;
+    font-style:italic;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .dice-wrap.dice-spin{ animation:none; }
+    .race-reveal{ animation:none; }
   }
   .step-title{
     font-size:18px;
