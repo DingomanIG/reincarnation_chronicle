@@ -359,6 +359,44 @@ try{
   console.error("[archive] Supabase 클라이언트 초기화 실패", e);
 }
 
+/* ---------- 익명 로그인 (포인트 귀속용) ----------
+   첫 방문에 자동으로 익명 계정이 만들어지고, 이후 모든 생의 기록이 그 계정에 쌓인다.
+   나중에 이메일/구글을 연결하면(linkIdentity) 지금까지 쌓인 포인트가 그대로 승계된다. */
+let currentUserId = null;
+let _authPromise = null;
+
+async function ensureAnonymousSession(){
+  if(!supabaseClient) return null;
+  if(!_authPromise){
+    _authPromise = (async ()=>{
+      try{
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if(session && session.user) return session.user.id; // 이미 있는 세션 재사용
+        const { data, error } = await supabaseClient.auth.signInAnonymously();
+        if(error) throw error;
+        return data && data.user ? data.user.id : null;
+      }catch(e){
+        console.error("[auth] 익명 로그인 실패", e);
+        _authPromise = null; // 다음 시도 때 다시 붙어볼 수 있도록 초기화
+        return null;
+      }
+    })();
+  }
+  currentUserId = await _authPromise;
+  return currentUserId;
+}
+
+// 지금 로그인된 계정이 지금까지 모은 업적 포인트 총합
+async function fetchMyTotalPoints(){
+  if(!supabaseClient || !currentUserId) return null;
+  const { data, error } = await supabaseClient
+    .from("characters")
+    .select("contribution_points")
+    .eq("user_id", currentUserId);
+  if(error) throw error;
+  return (data || []).reduce((sum, r)=> sum + (r.contribution_points || 0), 0);
+}
+
 // 새로 태어난 캐릭터를 아카이브 테이블에 저장하고, 생성된 행의 id를 돌려준다
 // (다음 세대를 이어갈 때 그 id를 parent_id로 물려주기 위함)
 async function archiveCharacter(record){
@@ -424,8 +462,13 @@ function resetSidePanels(){
   if(sidePanelsEl) sidePanelsEl.innerHTML = '';
 }
 
+// 화면이 바뀔 때마다 올라가는 번호. 저장/조회 응답이 늦게 도착했을 때
+// 이미 다른 화면으로 넘어갔다면 푸터를 덮어쓰지 않도록 판별하는 데 쓴다.
+let _screenToken = 0;
+
 // 화면 전환 시 카드 내용을 오른쪽에서 슬라이드 인시키며 교체한다
 function setCardHTML(html){
+  _screenToken++;
   card.innerHTML = html;
   card.classList.remove('slide-in');
   void card.offsetWidth; // 강제 리플로우: 애니메이션 재시작
@@ -804,7 +847,7 @@ function screenResult(){
       <button class="btn ghost" onclick="screenStart()">처음으로</button>
     </div>
   `);
-  foot.textContent = "업적 포인트는 누적되면 로어포인트로 전환됩니다 (프로토타입: 미저장)";
+  foot.textContent = "이번 생의 기록을 남기는 중...";
   typeInto("godSpeechText", closingGod.endLine);
 
   const record = {
@@ -849,13 +892,20 @@ function renderSidePanelsError(){
 }
 
 async function archiveAndLoadWorldStats(record){
+  const screenToken = _screenToken; // 이 결과 화면의 번호
+  let saved = false;
   try{
+    const uid = await ensureAnonymousSession();
+    if(!uid) throw new Error("익명 세션이 없어 기록을 저장할 수 없습니다.");
+    record.user_id = uid; // 이 생의 포인트를 지금 로그인된 계정에 귀속시킨다
     const insertedId = await archiveCharacter(record);
     // 이번 생에 자식이 있었다면, 방금 저장된 이 생의 id를 자식의 parent_id로 물려준다
     if(state.pendingChild) state.pendingChild.parentId = insertedId;
+    saved = true;
   }catch(e){
     console.error("[archive] 캐릭터 저장 실패", e);
   }
+  updateTotalPointsFooter(saved, screenToken);
   try{
     const [all, ancestorChain] = await Promise.all([
       fetchWorldRecords(),
@@ -865,6 +915,26 @@ async function archiveAndLoadWorldStats(record){
   }catch(e){
     console.error("[archive] 세계관 통계 조회 실패", e);
     renderSidePanelsError();
+  }
+}
+
+// 저장이 끝나면 푸터를 이 계정의 누적 업적 포인트로 갱신한다
+async function updateTotalPointsFooter(saved, screenToken){
+  if(screenToken !== _screenToken) return; // 이미 다른 화면으로 넘어갔다면 건드리지 않는다
+  if(!saved){
+    foot.textContent = "이번 생의 기록을 저장하지 못했습니다. (누적 포인트에 반영되지 않음)";
+    return;
+  }
+  try{
+    const total = await fetchMyTotalPoints();
+    if(screenToken !== _screenToken) return;
+    foot.textContent = total == null
+      ? "업적 포인트는 누적되면 로어포인트로 전환됩니다"
+      : `누적 업적 포인트 ${total} · 누적되면 로어포인트로 전환됩니다`;
+  }catch(e){
+    console.error("[archive] 누적 포인트 조회 실패", e);
+    if(screenToken !== _screenToken) return;
+    foot.textContent = "업적 포인트는 누적되면 로어포인트로 전환됩니다";
   }
 }
 
@@ -1033,4 +1103,5 @@ function renderSidePanels(all, record, ancestorChain){
 }
 
 /* ---------- 초기 ---------- */
+ensureAnonymousSession(); // 결과 화면에서 기다리지 않도록 미리 세션을 붙여둔다
 screenStart();
