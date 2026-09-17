@@ -1,6 +1,11 @@
 -- 익명 로그인 도입에 맞춰 characters 테이블에 소유자(user_id)를 추가하고 RLS를 건다.
 -- Supabase 대시보드 > SQL Editor 에 그대로 붙여넣어 한 번 실행하면 된다.
--- (사전 준비: Authentication > Sign In / Providers 에서 "Anonymous sign-ins" 를 켜둘 것)
+-- 사전 준비 (Authentication > Sign In / Providers):
+--   1. "Anonymous sign-ins" 활성화
+--   2. Google provider 활성화 + Client ID / Secret 등록
+--   3. "Manual linking" 활성화  ← 익명 계정에 구글을 연결(linkIdentity)하려면 필요.
+--      꺼져 있으면 연결이 실패하고, 구글 로그인 시 포인트가 승계되지 않는다.
+--   4. URL Configuration > Redirect URLs 에 게임이 배포된 주소 등록
 
 -- 1) 소유자 컬럼
 --    기존 행들은 user_id 가 NULL 로 남는다. 주인을 알 수 없는 "무명의 기록"으로,
