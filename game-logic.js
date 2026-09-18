@@ -359,6 +359,207 @@ try{
   console.error("[archive] Supabase 클라이언트 초기화 실패", e);
 }
 
+/* ---------- 로그인 (포인트 귀속용) ----------
+   첫 방문에 자동으로 익명 계정이 만들어지고, 이후 모든 생의 기록이 그 계정에 쌓인다.
+   구글 계정을 "연결"하면(linkIdentity) 계정 id가 그대로 유지되므로
+   익명으로 쌓아둔 포인트가 손실 없이 승계된다. */
+let currentUser = null;   // 지금 로그인된 사용자 객체 (익명 포함)
+let currentUserId = null; // 그 사용자의 id (characters.user_id에 들어간다)
+let _authPromise = null;
+let accountNotice = null; // 계정 표시줄에 띄울 안내 문구
+
+function applySession(session){
+  currentUser = (session && session.user) ? session.user : null;
+  currentUserId = currentUser ? currentUser.id : null;
+  return currentUserId;
+}
+
+// 구글 등 외부 계정이 연결되지 않은, 익명 상태인지
+function isAnonymousUser(){
+  return !!(currentUser && currentUser.is_anonymous);
+}
+
+// 계정 표시줄에 보여줄 이름 (구글 이름 > 이메일 순)
+function accountDisplayName(){
+  if(!currentUser) return "";
+  const meta = currentUser.user_metadata || {};
+  return meta.full_name || meta.name || currentUser.email || "연결된 계정";
+}
+
+async function ensureAnonymousSession(){
+  if(!supabaseClient) return null;
+  if(!_authPromise){
+    _authPromise = (async ()=>{
+      try{
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if(session && session.user) return applySession(session); // 이미 있는 세션 재사용
+        const { data, error } = await supabaseClient.auth.signInAnonymously();
+        if(error) throw error;
+        return applySession(data && data.session ? data.session : { user: data && data.user });
+      }catch(e){
+        console.error("[auth] 익명 로그인 실패", e);
+        _authPromise = null; // 다음 시도 때 다시 붙어볼 수 있도록 초기화
+        return null;
+      }
+    })();
+  }
+  await _authPromise;
+  // 그 사이 로그인 상태가 바뀌었을 수 있으므로 캐시된 값이 아니라 현재 값을 돌려준다
+  return currentUserId;
+}
+
+/* ---------- 구글 계정 연동 ---------- */
+// 로그인/연결이 끝나면 돌아올 주소 (쿼리·해시를 떼어낸 현재 페이지)
+function authRedirectTo(){
+  return window.location.origin + window.location.pathname;
+}
+
+// 익명 계정에 구글을 "연결"한다. 계정 id가 유지되므로 지금까지 모은 포인트가 그대로 따라온다.
+// 이미 구글로 로그인된 상태라면 연결할 게 없으므로 그냥 로그인 절차를 태운다.
+async function linkGoogleAccount(){
+  if(!supabaseClient){
+    setAccountNotice("기록 서버에 연결되어 있지 않아 로그인할 수 없습니다.");
+    return;
+  }
+  await ensureAnonymousSession();
+  setAccountNotice("구글로 이동하는 중...");
+  try{
+    const options = { redirectTo: authRedirectTo() };
+    const { error } = isAnonymousUser()
+      ? await supabaseClient.auth.linkIdentity({ provider:"google", options })
+      : await supabaseClient.auth.signInWithOAuth({ provider:"google", options });
+    if(error) throw error;
+  }catch(e){
+    console.error("[auth] 구글 연결 실패", e);
+    setAccountNotice("구글 연결에 실패했습니다. 잠시 후 다시 시도해주세요.");
+  }
+}
+
+// 연결이 아니라 "그 구글 계정으로 갈아타기".
+// 이미 다른 계정에 물려 있는 구글 계정을 골랐을 때의 탈출구로만 쓴다.
+async function signInWithGoogle(){
+  if(!supabaseClient) return;
+  setAccountNotice("구글로 이동하는 중...");
+  try{
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider:"google",
+      options:{ redirectTo: authRedirectTo() }
+    });
+    if(error) throw error;
+  }catch(e){
+    console.error("[auth] 구글 로그인 실패", e);
+    setAccountNotice("구글 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.");
+  }
+}
+
+// 로그아웃하면 다시 새 익명 계정으로 시작한다 (게임은 로그인 없이도 굴러가야 하므로).
+// 익명 계정은 한번 로그아웃하면 되돌아갈 수 없어서, 익명 상태에서는 이 버튼을 노출하지 않는다.
+async function signOutAccount(){
+  if(!supabaseClient) return;
+  setAccountNotice("로그아웃하는 중...");
+  try{
+    await supabaseClient.auth.signOut();
+  }catch(e){
+    console.error("[auth] 로그아웃 실패", e);
+  }
+  _authPromise = null;
+  applySession(null);
+  await ensureAnonymousSession();
+  setAccountNotice(null);
+}
+
+// OAuth 실패는 리다이렉트로 돌아온 주소에 error 파라미터로 실려온다.
+// 한 번 읽고 주소에서 지운다 (새로고침할 때마다 다시 뜨지 않도록).
+function consumeAuthRedirectError(){
+  let code = null, desc = null;
+  try{
+    const hash = new URLSearchParams((window.location.hash || "").replace(/^#/, ""));
+    const query = new URLSearchParams(window.location.search || "");
+    code = hash.get("error_code") || query.get("error_code");
+    desc = hash.get("error_description") || query.get("error_description");
+    if(!code && !desc && !hash.get("error") && !query.get("error")) return null;
+    window.history.replaceState(null, "", authRedirectTo());
+  }catch(e){
+    return null;
+  }
+  // 고른 구글 계정이 이미 다른 계정에 연결된 경우 — 연결은 불가능하고, 갈아타기만 가능하다
+  if((code || "").includes("identity_already_exists")){
+    return { alreadyLinked:true };
+  }
+  return { message: desc ? decodeURIComponent(desc.replace(/\+/g, " ")) : "구글 연결에 실패했습니다." };
+}
+
+/* ---------- 계정 표시줄 ---------- */
+const accountBarEl = document.getElementById('accountBar');
+
+// 구글 프로필 이름이나 리다이렉트 주소에 실려온 문구처럼, 우리가 쓰지 않은 문자열을
+// 표시줄에 넣기 전에 태그를 무력화한다
+function escapeHtml(str){
+  return String(str == null ? "" : str)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// text는 HTML 그대로 들어간다. 바깥에서 온 문자열이라면 부르는 쪽에서 escapeHtml을 거칠 것.
+function setAccountNotice(text){
+  accountNotice = text || null;
+  renderAccountBar();
+}
+
+function renderAccountBar(){
+  if(!accountBarEl) return;
+  let html = "";
+  if(!supabaseClient){
+    html = `<span>기록 서버에 연결되지 않음</span>`;
+  }else if(!currentUserId){
+    html = `<span>기록을 남길 계정을 준비하는 중...</span>`;
+  }else if(isAnonymousUser()){
+    html = `<span>익명으로 기록 중 (이 브라우저에만 남습니다)</span>
+      <button class="link-btn" onclick="linkGoogleAccount()">구글 계정 연결</button>`;
+  }else{
+    html = `<span>${escapeHtml(accountDisplayName())}</span>
+      <button class="link-btn" onclick="signOutAccount()">로그아웃</button>`;
+  }
+  if(accountNotice){
+    html += `<span class="notice">${accountNotice}</span>`;
+  }
+  accountBarEl.innerHTML = html;
+}
+
+// 로그인 상태가 바뀌면(구글 연결 후 복귀, 로그아웃 등) 표시줄을 다시 그린다
+if(supabaseClient){
+  supabaseClient.auth.onAuthStateChange((event, session)=>{
+    applySession(session);
+    renderAccountBar();
+  });
+}
+
+async function initAccount(){
+  renderAccountBar();
+  await ensureAnonymousSession();
+  const err = consumeAuthRedirectError();
+  if(err && err.alreadyLinked){
+    setAccountNotice('이미 다른 계정에 연결된 구글 계정입니다. ' +
+      '<button class="link-btn" onclick="signInWithGoogle()">그 계정으로 로그인</button> ' +
+      '— 지금 익명 계정에 쌓인 포인트는 옮겨지지 않습니다.');
+  }else if(err){
+    setAccountNotice(escapeHtml(err.message));
+  }else{
+    renderAccountBar();
+  }
+}
+
+// 지금 로그인된 계정이 지금까지 모은 업적 포인트 총합
+async function fetchMyTotalPoints(){
+  if(!supabaseClient || !currentUserId) return null;
+  const { data, error } = await supabaseClient
+    .from("characters")
+    .select("contribution_points")
+    .eq("user_id", currentUserId);
+  if(error) throw error;
+  return (data || []).reduce((sum, r)=> sum + (r.contribution_points || 0), 0);
+}
+
 // 새로 태어난 캐릭터를 아카이브 테이블에 저장하고, 생성된 행의 id를 돌려준다
 // (다음 세대를 이어갈 때 그 id를 parent_id로 물려주기 위함)
 async function archiveCharacter(record){
@@ -424,8 +625,13 @@ function resetSidePanels(){
   if(sidePanelsEl) sidePanelsEl.innerHTML = '';
 }
 
+// 화면이 바뀔 때마다 올라가는 번호. 저장/조회 응답이 늦게 도착했을 때
+// 이미 다른 화면으로 넘어갔다면 푸터를 덮어쓰지 않도록 판별하는 데 쓴다.
+let _screenToken = 0;
+
 // 화면 전환 시 카드 내용을 오른쪽에서 슬라이드 인시키며 교체한다
 function setCardHTML(html){
+  _screenToken++;
   card.innerHTML = html;
   card.classList.remove('slide-in');
   void card.offsetWidth; // 강제 리플로우: 애니메이션 재시작
@@ -804,7 +1010,7 @@ function screenResult(){
       <button class="btn ghost" onclick="screenStart()">처음으로</button>
     </div>
   `);
-  foot.textContent = "업적 포인트는 누적되면 로어포인트로 전환됩니다 (프로토타입: 미저장)";
+  foot.textContent = "이번 생의 기록을 남기는 중...";
   typeInto("godSpeechText", closingGod.endLine);
 
   const record = {
@@ -849,13 +1055,20 @@ function renderSidePanelsError(){
 }
 
 async function archiveAndLoadWorldStats(record){
+  const screenToken = _screenToken; // 이 결과 화면의 번호
+  let saved = false;
   try{
+    const uid = await ensureAnonymousSession();
+    if(!uid) throw new Error("익명 세션이 없어 기록을 저장할 수 없습니다.");
+    record.user_id = uid; // 이 생의 포인트를 지금 로그인된 계정에 귀속시킨다
     const insertedId = await archiveCharacter(record);
     // 이번 생에 자식이 있었다면, 방금 저장된 이 생의 id를 자식의 parent_id로 물려준다
     if(state.pendingChild) state.pendingChild.parentId = insertedId;
+    saved = true;
   }catch(e){
     console.error("[archive] 캐릭터 저장 실패", e);
   }
+  updateTotalPointsFooter(saved, screenToken);
   try{
     const [all, ancestorChain] = await Promise.all([
       fetchWorldRecords(),
@@ -865,6 +1078,26 @@ async function archiveAndLoadWorldStats(record){
   }catch(e){
     console.error("[archive] 세계관 통계 조회 실패", e);
     renderSidePanelsError();
+  }
+}
+
+// 저장이 끝나면 푸터를 이 계정의 누적 업적 포인트로 갱신한다
+async function updateTotalPointsFooter(saved, screenToken){
+  if(screenToken !== _screenToken) return; // 이미 다른 화면으로 넘어갔다면 건드리지 않는다
+  if(!saved){
+    foot.textContent = "이번 생의 기록을 저장하지 못했습니다. (누적 포인트에 반영되지 않음)";
+    return;
+  }
+  try{
+    const total = await fetchMyTotalPoints();
+    if(screenToken !== _screenToken) return;
+    foot.textContent = total == null
+      ? "업적 포인트는 누적되면 로어포인트로 전환됩니다"
+      : `누적 업적 포인트 ${total} · 누적되면 로어포인트로 전환됩니다`;
+  }catch(e){
+    console.error("[archive] 누적 포인트 조회 실패", e);
+    if(screenToken !== _screenToken) return;
+    foot.textContent = "업적 포인트는 누적되면 로어포인트로 전환됩니다";
   }
 }
 
@@ -1033,4 +1266,5 @@ function renderSidePanels(all, record, ancestorChain){
 }
 
 /* ---------- 초기 ---------- */
+initAccount(); // 결과 화면에서 기다리지 않도록 미리 세션을 붙이고 계정 표시줄을 세운다
 screenStart();
